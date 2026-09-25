@@ -21,6 +21,7 @@ public sealed class FacturaListado
     public decimal? CuotaIRPF { get; set; }
     public decimal Total { get; set; }
     public string? IBAN { get; set; }
+    public FormaPago FormaPago { get; set; }
     public EstadoFactura Estado { get; set; }
     public DateTime? FechaPago { get; set; }
     public string? MotivoRechazo { get; set; }
@@ -30,6 +31,7 @@ public sealed class FacturaListado
     public DateTime FechaRegistro { get; set; }
 
     public string EstadoTexto => Textos.Estado(Estado);
+    public string FormaPagoCorta => FormaPago == FormaPago.Domiciliacion ? "Domic." : "Transf.";
 
     /// <summary>Pendiente de pago con el vencimiento ya pasado.</summary>
     public bool Vencida => Estado is EstadoFactura.Recibida or EstadoFactura.Validada
@@ -37,8 +39,11 @@ public sealed class FacturaListado
 
     public bool Anulada => Estado == EstadoFactura.Rechazada;
 
-    /// <summary>El IBAN de la factura no es el que tiene ahora el proveedor.</summary>
-    public bool IbanDistinto =>
+    /// <summary>
+    /// Pago por transferencia a un IBAN que no es el que tiene ahora el proveedor.
+    /// (En las domiciliadas el IBAN es la cuenta de cargo de CEFER: no se compara.)
+    /// </summary>
+    public bool IbanDistinto => FormaPago == FormaPago.Transferencia &&
         Validaciones.NormalizarIban(IBAN) is { Length: > 0 } i && i != Validaciones.NormalizarIban(IbanProveedor);
 
     public string IbanFormateado => Validaciones.FormatearIban(IBAN);
@@ -59,6 +64,7 @@ public sealed class FiltroFacturas
 {
     public List<EstadoFactura> Estados { get; set; } = new();
     public int? IdProveedor { get; set; }
+    public FormaPago? FormaPago { get; set; }
     public string? Texto { get; set; }
     public bool PorVencimiento { get; set; }
     public DateTime? Desde { get; set; }
@@ -75,4 +81,6 @@ public static class Textos
         EstadoFactura.Rechazada => "Rechazada/Anulada",
         _ => e.ToString(),
     };
+
+    public static string FormaPago(FormaPago f) => f == Models.FormaPago.Domiciliacion ? "Domiciliación" : "Transferencia";
 }

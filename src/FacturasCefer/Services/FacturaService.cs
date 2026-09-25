@@ -116,10 +116,10 @@ public sealed class FacturaService
             cmd.Transaction = tx;
             cmd.CommandText = @"INSERT INTO dbo.FacturaProveedores
                 (IdProveedor, NumeroFactura, Concepto, FechaFactura, FechaVencimiento, BaseImponible, PorcIVA, CuotaIVA,
-                 PorcIRPF, CuotaIRPF, Total, IBAN, Estado, RutaPdf, RutaPdfOriginal, PaginaInicio, PaginaFin,
+                 PorcIRPF, CuotaIRPF, Total, IBAN, FormaPago, Estado, RutaPdf, RutaPdfOriginal, PaginaInicio, PaginaFin,
                  NombreOriginal, JsonExtraccionIA, Observaciones, IdUsuarioRegistro)
                 OUTPUT INSERTED.Id
-                VALUES (@prov, @num, @conc, @fec, @vto, @base, @piva, @civa, @pirpf, @cirpf, @total, @iban, @estado,
+                VALUES (@prov, @num, @conc, @fec, @vto, @base, @piva, @civa, @pirpf, @cirpf, @total, @iban, @fpago, @estado,
                         @ruta, @rutaOrig, @pini, @pfin, @nomOrig, @json, @obs, @usr)";
             cmd.Parameters.AddWithValue("@prov", f.IdProveedor);
             cmd.Parameters.AddWithValue("@num", f.NumeroFactura.Trim());
@@ -133,6 +133,7 @@ public sealed class FacturaService
             cmd.Parameters.AddWithValue("@cirpf", (object?)f.CuotaIRPF ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@total", f.Total);
             cmd.Parameters.AddWithValue("@iban", SqlUtil.DbVal(Validaciones.NormalizarIban(f.IBAN)));
+            cmd.Parameters.AddWithValue("@fpago", (byte)f.FormaPago);
             cmd.Parameters.AddWithValue("@estado", (byte)f.Estado);
             cmd.Parameters.AddWithValue("@ruta", f.RutaPdf);
             cmd.Parameters.AddWithValue("@rutaOrig", SqlUtil.DbVal(f.RutaPdfOriginal));
@@ -172,7 +173,7 @@ public sealed class FacturaService
     private const string SelectListado = @"
         SELECT f.Id, f.IdProveedor, p.RazonSocial, p.CIF, p.IBAN AS IbanProveedor, f.NumeroFactura, f.Concepto,
                f.FechaFactura, f.FechaVencimiento, f.BaseImponible, f.PorcIVA, f.CuotaIVA, f.PorcIRPF, f.CuotaIRPF,
-               f.Total, f.IBAN, f.Estado, f.FechaPago, f.MotivoRechazo, f.RutaPdf, f.RutaPdfOriginal,
+               f.Total, f.IBAN, f.FormaPago, f.Estado, f.FechaPago, f.MotivoRechazo, f.RutaPdf, f.RutaPdfOriginal,
                f.Observaciones, f.FechaRegistro
         FROM dbo.FacturaProveedores f
         JOIN dbo.Proveedor p ON p.Id = f.IdProveedor";
@@ -197,12 +198,14 @@ public sealed class FacturaService
         cmd.CommandText = SelectListado + $@"
             WHERE f.Estado IN ({string.Join(",", estados)})
               AND (@prov IS NULL OR f.IdProveedor = @prov)
+              AND (@fpago IS NULL OR f.FormaPago = @fpago)
               AND (@desde IS NULL OR {campoFecha} >= @desde)
               AND (@hasta IS NULL OR {campoFecha} <= @hasta)
               AND (@t IS NULL OR f.NumeroFactura LIKE '%' + @t + '%' OR f.Concepto LIKE '%' + @t + '%'
                    OR p.RazonSocial LIKE '%' + @t + '%' OR p.CIF LIKE '%' + @t + '%')
             ORDER BY f.FechaFactura DESC, f.Id DESC";
         cmd.Parameters.AddWithValue("@prov", (object?)filtro.IdProveedor ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@fpago", filtro.FormaPago is { } fp ? (byte)fp : DBNull.Value);
         cmd.Parameters.Add("@desde", System.Data.SqlDbType.Date).Value = (object?)filtro.Desde?.Date ?? DBNull.Value;
         cmd.Parameters.Add("@hasta", System.Data.SqlDbType.Date).Value = (object?)filtro.Hasta?.Date ?? DBNull.Value;
         cmd.Parameters.AddWithValue("@t", SqlUtil.DbVal(filtro.Texto));
@@ -260,7 +263,7 @@ public sealed class FacturaService
         cmd.CommandText = @"UPDATE dbo.FacturaProveedores
                             SET NumeroFactura = @num, Concepto = @conc, FechaFactura = @fec, FechaVencimiento = @vto,
                                 BaseImponible = @base, PorcIVA = @piva, CuotaIVA = @civa, PorcIRPF = @pirpf,
-                                CuotaIRPF = @cirpf, Total = @total, IBAN = @iban, Observaciones = @obs
+                                CuotaIRPF = @cirpf, Total = @total, IBAN = @iban, FormaPago = @fpago, Observaciones = @obs
                             WHERE Id = @id AND Estado IN (1, 2)";
         cmd.Parameters.AddWithValue("@id", f.Id);
         cmd.Parameters.AddWithValue("@num", f.NumeroFactura.Trim());
@@ -274,6 +277,7 @@ public sealed class FacturaService
         cmd.Parameters.AddWithValue("@cirpf", (object?)f.CuotaIRPF ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@total", f.Total);
         cmd.Parameters.AddWithValue("@iban", SqlUtil.DbVal(Validaciones.NormalizarIban(f.IBAN)));
+        cmd.Parameters.AddWithValue("@fpago", (byte)f.FormaPago);
         cmd.Parameters.AddWithValue("@obs", SqlUtil.DbVal(f.Observaciones));
         try
         {
@@ -432,6 +436,7 @@ public sealed class FacturaService
             CuotaIRPF = Dec("CuotaIRPF"),
             Total = rd.GetDecimal(rd.GetOrdinal("Total")),
             IBAN = rd.Str("IBAN"),
+            FormaPago = (FormaPago)rd.GetByte(rd.GetOrdinal("FormaPago")),
             Estado = (EstadoFactura)rd.GetByte(rd.GetOrdinal("Estado")),
             FechaPago = Fecha("FechaPago"),
             MotivoRechazo = rd.Str("MotivoRechazo"),

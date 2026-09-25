@@ -66,10 +66,16 @@
                         <DatePicker x:Name="DpVencimiento"/>
                     </StackPanel>
                     <StackPanel Grid.Column="6">
-                        <TextBlock Text="IBAN" Style="{StaticResource Etiqueta}"/>
-                        <TextBox x:Name="TxtIban" CharacterCasing="Upper" MaxLength="42" FontFamily="Consolas"/>
+                        <TextBlock Text="Forma de pago" Style="{StaticResource Etiqueta}"/>
+                        <ComboBox x:Name="CmbFormaPago" Height="26" VerticalContentAlignment="Center"
+                                  SelectionChanged="CmbFormaPago_SelectionChanged">
+                            <ComboBoxItem Content="Transferencia"/>
+                            <ComboBoxItem Content="Domiciliación"/>
+                        </ComboBox>
                     </StackPanel>
                 </Grid>
+                <TextBlock x:Name="LblIban" Text="IBAN del proveedor" Style="{StaticResource Etiqueta}"/>
+                <TextBox x:Name="TxtIban" CharacterCasing="Upper" MaxLength="42" FontFamily="Consolas"/>
                 <TextBlock Text="Concepto" Style="{StaticResource Etiqueta}"/>
                 <TextBox x:Name="TxtConcepto" MaxLength="500"/>
 

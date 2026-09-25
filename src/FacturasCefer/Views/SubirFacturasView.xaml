@@ -122,7 +122,16 @@
                             </DockPanel>
                         </Border>
 
-                        <TextBlock Text="IBAN de la factura" Style="{StaticResource Etiqueta}"/>
+                        <TextBlock Text="Forma de pago" Style="{StaticResource Etiqueta}"/>
+                        <ComboBox x:Name="CmbFormaPago" Height="26" VerticalContentAlignment="Center"
+                                  SelectionChanged="CmbFormaPago_SelectionChanged">
+                            <ComboBoxItem Content="Transferencia"/>
+                            <ComboBoxItem Content="Domiciliación (recibo a la cuenta de CEFER)"/>
+                        </ComboBox>
+                        <TextBlock x:Name="TxtAvisoFormaPago" Visibility="Collapsed" TextWrapping="Wrap" Margin="0,4,0,0"
+                                   Foreground="#8A5300"/>
+
+                        <TextBlock x:Name="LblIban" Text="IBAN del proveedor" Style="{StaticResource Etiqueta}"/>
                         <TextBox x:Name="TxtIban" CharacterCasing="Upper" MaxLength="42" FontFamily="Consolas"
                                  TextChanged="TxtIban_TextChanged"/>
                         <Border x:Name="PanelIban" Visibility="Collapsed" Padding="8,6" Margin="0,6,0,0" CornerRadius="3">

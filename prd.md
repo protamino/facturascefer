@@ -1,6 +1,6 @@
 # FACTURASCEFER — PRD
 
-*Versión 0.4 · 2026-09-25 · Autor: Fernando Marina*
+*Versión 0.5 · 2026-09-25 · Autor: Fernando Marina*
 
 ## 1. Objetivo
 
@@ -53,7 +53,8 @@ Claude devuelve un JSON con una **lista de facturas** encontradas en el PDF. Por
 | Razón social del proveedor | |
 | CIF/NIF del proveedor | Clave principal para identificar al proveedor. No confundir con el CIF de CEFER (`CifPropio` en config, se indica a Claude) |
 | Dirección del proveedor | Para prellenar el alta |
-| IBAN | Normalizado sin espacios |
+| Forma de pago | Transferencia / domiciliación / otra |
+| IBAN | Normalizado sin espacios. En domiciliadas es la **cuenta de cargo de CEFER**, no la del proveedor |
 | Nº de factura | |
 | Fecha de factura | |
 | Fecha de vencimiento | Si no aparece, vacía |
@@ -75,6 +76,12 @@ Claude devuelve un JSON con una **lista de facturas** encontradas en el PDF. Por
 ### 4.4 Pantalla de revisión
 - Izquierda: **visor del PDF** (se sitúa en las páginas de la factura en revisión). Derecha: **formulario editable** con los datos extraídos.
 - Botones: **Guardar**, **Descartar**, **Siguiente** (siguiente factura del PDF o siguiente PDF de la cola).
+
+### 4.4 bis Forma de pago
+- Cada proveedor tiene **forma de pago**: **Transferencia** (CEFER paga al IBAN del proveedor) o **Domiciliación** (el proveedor gira un recibo a la cuenta de CEFER).
+- En la revisión se toma la del proveedor (o la que detecta la IA si es nuevo); si la factura indica otra, se avisa.
+- En domiciliadas el IBAN de la factura se guarda como **cuenta de cargo** y **no** se compara con el del proveedor (no hay alerta antifraude) ni se copia a su ficha al darlo de alta.
+- Las domiciliadas siguen el mismo flujo de estados: se marcan Pagadas a mano al comprobar el cargo (filtro por forma de pago en el listado).
 
 ### 4.5 Emparejado de proveedor
 
@@ -101,7 +108,7 @@ Claude devuelve un JSON con una **lista de facturas** encontradas en el PDF. Por
 ## 5. Listado de facturas
 
 - Tabla: proveedor, nº factura, fecha, vencimiento, base, IVA, total, estado, fecha de pago.
-- **Filtros:** estado, proveedor, rango de fechas (factura o vencimiento), texto libre.
+- **Filtros:** estado, proveedor, forma de pago, rango de fechas (factura o vencimiento), texto libre.
 - Orden por cualquier columna. Por defecto: fecha de factura descendente.
 - **Resaltado** de facturas vencidas y no pagadas.
 - Pie con **nº de facturas y suma de totales** del filtro.
@@ -145,6 +152,7 @@ Recibida ──► Validada ──► Pagada
 | Provincia | nvarchar(100) | |
 | Pais | nvarchar(60) | por defecto "España" |
 | IBAN | varchar(34) | |
+| FormaPago | tinyint | 1 Transferencia, 2 Domiciliación |
 | Email | nvarchar(150) | |
 | Telefono | varchar(30) | |
 | Observaciones | nvarchar(max) | |
@@ -167,7 +175,8 @@ Recibida ──► Validada ──► Pagada
 | PorcIRPF | decimal(5,2) NULL | |
 | CuotaIRPF | decimal(12,2) NULL | |
 | Total | decimal(12,2) | |
-| IBAN | varchar(34) | el de la factura |
+| IBAN | varchar(34) | el de la factura (transferencia: del proveedor; domiciliación: cuenta de cargo de CEFER) |
+| FormaPago | tinyint | 1 Transferencia, 2 Domiciliación |
 | Estado | tinyint | 1 Recibida, 2 Validada, 3 Pagada, 4 Rechazada/Anulada |
 | FechaPago | date NULL | |
 | MotivoRechazo | nvarchar(500) NULL | |

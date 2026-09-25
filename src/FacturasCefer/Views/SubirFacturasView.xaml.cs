@@ -258,6 +258,7 @@ public partial class SubirFacturasView : UserControl
 
         TxtCif.Text = ia.ProveedorCif ?? "";
         TxtIban.Text = Validaciones.FormatearIban(ia.Iban);
+        FormaPagoActual = FormaPagoIa(ia) ?? FormaPago.Transferencia;
         TxtNumero.Text = ia.NumeroFactura ?? "";
         DpFecha.SelectedDate = ParseFecha(ia.FechaFactura);
         DpVencimiento.SelectedDate = ParseFecha(ia.FechaVencimiento);
@@ -295,6 +296,7 @@ public partial class SubirFacturasView : UserControl
         var ia = fr.Ia;
         ia.ProveedorCif = TxtCif.Text.Trim();
         ia.Iban = Validaciones.NormalizarIban(TxtIban.Text);
+        ia.FormaPago = FormaPagoActual == FormaPago.Domiciliacion ? "domiciliacion" : "transferencia";
         ia.NumeroFactura = TxtNumero.Text.Trim();
         ia.FechaFactura = DpFecha.SelectedDate?.ToString("yyyy-MM-dd") ?? "";
         ia.FechaVencimiento = DpVencimiento.SelectedDate?.ToString("yyyy-MM-dd") ?? "";
@@ -389,6 +391,8 @@ public partial class SubirFacturasView : UserControl
                 : $"Proveedor no registrado: {(string.IsNullOrWhiteSpace(razonIa) ? cif : $"{razonIa} ({cif})")}.";
             BtnAltaProveedor.Visibility = Visibility.Visible;
         }
+        if (p is not null) FormaPagoActual = p.FormaPago;
+        ActualizarAvisoFormaPago();
         ActualizarPanelIban();
     }
 
@@ -407,7 +411,9 @@ public partial class SubirFacturasView : UserControl
             CP = ia.ProveedorCp,
             Poblacion = ia.ProveedorPoblacion,
             Provincia = ia.ProveedorProvincia,
-            IBAN = Validaciones.IbanValido(iban) ? iban : null,
+            FormaPago = FormaPagoActual,
+            // En domiciliadas el IBAN de la factura es la cuenta de cargo de CEFER: no es del proveedor.
+            IBAN = FormaPagoActual == FormaPago.Transferencia && Validaciones.IbanValido(iban) ? iban : null,
             Email = ia.ProveedorEmail,
             Telefono = ia.ProveedorTelefono,
         };
@@ -422,12 +428,52 @@ public partial class SubirFacturasView : UserControl
 
     private void TxtIban_TextChanged(object sender, TextChangedEventArgs e) => ActualizarPanelIban();
 
+    private FormaPago FormaPagoActual
+    {
+        get => CmbFormaPago.SelectedIndex == 1 ? FormaPago.Domiciliacion : FormaPago.Transferencia;
+        set => CmbFormaPago.SelectedIndex = value == FormaPago.Domiciliacion ? 1 : 0;
+    }
+
+    private static FormaPago? FormaPagoIa(FacturaExtraida ia) => ia.FormaPago switch
+    {
+        "domiciliacion" => FormaPago.Domiciliacion,
+        "transferencia" => FormaPago.Transferencia,
+        _ => null,
+    };
+
+    private void CmbFormaPago_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (LblIban is null) return; // durante InitializeComponent
+        LblIban.Text = FormaPagoActual == FormaPago.Domiciliacion
+            ? "Cuenta de cargo (cuenta de CEFER donde se cobra el recibo)"
+            : "IBAN del proveedor";
+        ActualizarAvisoFormaPago();
+        ActualizarPanelIban();
+    }
+
+    /// <summary>Avisa si la forma de pago que indica la factura no es la que tiene el proveedor.</summary>
+    private void ActualizarAvisoFormaPago()
+    {
+        var ia = _pdf?.Actual?.Ia;
+        var enFactura = ia is null ? null : FormaPagoIa(ia);
+        if (_proveedor is null || enFactura is null || enFactura == _proveedor.FormaPago)
+        {
+            TxtAvisoFormaPago.Visibility = Visibility.Collapsed;
+            return;
+        }
+        TxtAvisoFormaPago.Text =
+            $"⚠ La factura indica {Textos.FormaPago(enFactura.Value).ToLower()}, pero el proveedor está dado de alta " +
+            $"con {Textos.FormaPago(_proveedor.FormaPago).ToLower()}. Revisa la ficha del proveedor si ha cambiado.";
+        TxtAvisoFormaPago.Visibility = Visibility.Visible;
+    }
+
     private void ActualizarPanelIban()
     {
         var ibanFactura = Validaciones.NormalizarIban(TxtIban.Text);
         var ibanProveedor = Validaciones.NormalizarIban(_proveedor?.IBAN);
 
-        if (_proveedor is null || ibanFactura.Length == 0 || ibanFactura == ibanProveedor)
+        if (_proveedor is null || ibanFactura.Length == 0 || ibanFactura == ibanProveedor ||
+            FormaPagoActual == FormaPago.Domiciliacion)
         {
             PanelIban.Visibility = Visibility.Collapsed;
             ChkActualizarIban.IsChecked = false;
@@ -625,6 +671,7 @@ public partial class SubirFacturasView : UserControl
             CuotaIRPF = cuotaIrpf,
             Total = total.Value,
             IBAN = iban.Length > 0 ? iban : null,
+            FormaPago = FormaPagoActual,
             NombreOriginal = pdf.NombreOriginal,
             JsonExtraccionIA = fr.JsonIa,
             Observaciones = TxtObservaciones.Text,

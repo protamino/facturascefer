@@ -117,7 +117,11 @@ public sealed class ExtraccionService
         - Si la factura está exenta de IVA, porc_iva y cuota_iva son 0. IRPF solo si aparece una retención
           (cuota_irpf en positivo); si no aparece, null.
         - Si hay varios tipos de IVA, suma las bases y las cuotas; en porc_iva pon el tipo principal.
-        - iban: la cuenta del proveedor donde pagar, sin espacios. CIF sin espacios ni guiones.
+        - forma_pago: "domiciliacion" si la factura se cobra por recibo/adeudo domiciliado en la cuenta del cliente
+          (p. ej. "recibo domiciliado", "domiciliación bancaria", "adeudo SEPA", "giro"); "transferencia" si CEFER debe
+          transferir a una cuenta del proveedor; "otra" si indica otro medio (tarjeta, contado…); "" si no consta.
+        - iban: la cuenta bancaria que aparece para el pago, sin espacios. Si es domiciliación, es la cuenta de CEFER
+          donde se carga el recibo (no la del proveedor); si es transferencia, la del proveedor. CIF sin espacios ni guiones.
         - concepto: resumen breve (máx. 200 caracteres) de lo facturado, tal como aparece en las líneas.
         - Si un dato no aparece, no lo inventes: cadena vacía "" en los campos de texto y null en los importes.
         - campos_dudosos: nombres de los campos que no has encontrado o que has leído con poca seguridad
@@ -148,6 +152,7 @@ public sealed class ExtraccionService
         };
         // Texto: "" si no aparece (la API limita a 16 los campos con unión/nullable). Importes: null.
         foreach (var c in CamposTexto) props[c] = new { type = "string" };
+        props["forma_pago"] = new { type = "string", @enum = new[] { "transferencia", "domiciliacion", "otra", "" } };
         foreach (var c in CamposNumero) props[c] = anyNull("number");
         props["campos_dudosos"] = new
         {

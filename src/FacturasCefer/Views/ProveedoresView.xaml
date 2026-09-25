@@ -25,6 +25,7 @@
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Razón social" Binding="{Binding RazonSocial}" Width="2*"/>
                 <DataGridTextColumn Header="CIF" Binding="{Binding CIF}" Width="110"/>
+                <DataGridTextColumn Header="Forma de pago" Binding="{Binding FormaPagoTexto}" Width="110"/>
                 <DataGridTextColumn Header="IBAN" Binding="{Binding IbanFormateado}" Width="250"/>
                 <DataGridTextColumn Header="Población" Binding="{Binding Poblacion}" Width="*"/>
                 <DataGridTextColumn Header="Teléfono" Binding="{Binding Telefono}" Width="110"/>

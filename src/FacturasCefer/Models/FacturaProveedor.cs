@@ -9,6 +9,16 @@ public enum EstadoFactura : byte
     Rechazada = 4,
 }
 
+/// <summary>
+/// Forma de pago (Proveedor.FormaPago y FacturaProveedores.FormaPago).
+/// Con domiciliación el IBAN de la factura es la cuenta de cargo de CEFER, no la del proveedor.
+/// </summary>
+public enum FormaPago : byte
+{
+    Transferencia = 1,
+    Domiciliacion = 2,
+}
+
 /// <summary>Factura de proveedor (dbo.FacturaProveedores).</summary>
 public sealed class FacturaProveedor
 {
@@ -25,6 +35,7 @@ public sealed class FacturaProveedor
     public decimal? CuotaIRPF { get; set; }
     public decimal Total { get; set; }
     public string? IBAN { get; set; }
+    public FormaPago FormaPago { get; set; } = FormaPago.Transferencia;
     public EstadoFactura Estado { get; set; } = EstadoFactura.Recibida;
     public string RutaPdf { get; set; } = "";
     public string? RutaPdfOriginal { get; set; }

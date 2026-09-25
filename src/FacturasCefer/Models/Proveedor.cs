@@ -12,6 +12,7 @@ public sealed class Proveedor
     public string? Provincia { get; set; }
     public string Pais { get; set; } = "España";
     public string? IBAN { get; set; }
+    public FormaPago FormaPago { get; set; } = FormaPago.Transferencia;
     public string? Email { get; set; }
     public string? Telefono { get; set; }
     public string? Observaciones { get; set; }
@@ -20,6 +21,7 @@ public sealed class Proveedor
 
     /// <summary>IBAN agrupado de 4 en 4 para mostrar.</summary>
     public string IbanFormateado => Services.Validaciones.FormatearIban(IBAN);
+    public string FormaPagoTexto => Textos.FormaPago(FormaPago);
 
     public Proveedor Clone() => (Proveedor)MemberwiseClone();
 }

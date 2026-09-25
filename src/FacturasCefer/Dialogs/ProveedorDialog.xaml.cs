@@ -36,6 +36,7 @@ public partial class ProveedorDialog : Window
         TxtRazonSocial.Text = p.RazonSocial;
         TxtCif.Text = p.CIF;
         TxtIban.Text = Validaciones.FormatearIban(p.IBAN);
+        CmbFormaPago.SelectedIndex = p.FormaPago == FormaPago.Domiciliacion ? 1 : 0;
         TxtDireccion.Text = p.Direccion;
         TxtCp.Text = p.CP;
         TxtPoblacion.Text = p.Poblacion;
@@ -79,6 +80,7 @@ public partial class ProveedorDialog : Window
         _p.RazonSocial = TxtRazonSocial.Text.Trim();
         _p.CIF = cif;
         _p.IBAN = iban.Length > 0 ? iban : null;
+        _p.FormaPago = FormaPagoSeleccionada;
         _p.Direccion = TxtDireccion.Text;
         _p.CP = TxtCp.Text;
         _p.Poblacion = TxtPoblacion.Text;
@@ -111,6 +113,17 @@ public partial class ProveedorDialog : Window
         {
             BtnGuardar.IsEnabled = true;
         }
+    }
+
+    private FormaPago FormaPagoSeleccionada =>
+        CmbFormaPago.SelectedIndex == 1 ? FormaPago.Domiciliacion : FormaPago.Transferencia;
+
+    private void CmbFormaPago_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (LblIban is null) return; // durante InitializeComponent
+        LblIban.Text = FormaPagoSeleccionada == FormaPago.Domiciliacion
+            ? "IBAN del proveedor (opcional si domicilia)"
+            : "IBAN del proveedor";
     }
 
     private void Error(string msg, System.Windows.Controls.Control foco)

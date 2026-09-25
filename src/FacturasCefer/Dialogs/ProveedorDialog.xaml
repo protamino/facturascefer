@@ -32,13 +32,21 @@
                 <TextBox x:Name="TxtCif" MaxLength="20" CharacterCasing="Upper"/>
             </StackPanel>
             <StackPanel Grid.Row="1" Grid.Column="2">
-                <TextBlock Text="IBAN" Style="{StaticResource Etiqueta}"/>
-                <TextBox x:Name="TxtIban" MaxLength="42" CharacterCasing="Upper" FontFamily="Consolas"/>
+                <TextBlock Text="Forma de pago *" Style="{StaticResource Etiqueta}"/>
+                <ComboBox x:Name="CmbFormaPago" SelectionChanged="CmbFormaPago_SelectionChanged" Height="26"
+                          VerticalContentAlignment="Center">
+                    <ComboBoxItem Content="Transferencia (CEFER paga al IBAN del proveedor)"/>
+                    <ComboBoxItem Content="Domiciliación (el proveedor gira recibo a CEFER)"/>
+                </ComboBox>
             </StackPanel>
 
-            <StackPanel Grid.Row="2" Grid.ColumnSpan="3">
+            <StackPanel Grid.Row="2" Grid.Column="0">
                 <TextBlock Text="Dirección" Style="{StaticResource Etiqueta}"/>
                 <TextBox x:Name="TxtDireccion" MaxLength="250"/>
+            </StackPanel>
+            <StackPanel Grid.Row="2" Grid.Column="2">
+                <TextBlock x:Name="LblIban" Text="IBAN del proveedor" Style="{StaticResource Etiqueta}"/>
+                <TextBox x:Name="TxtIban" MaxLength="42" CharacterCasing="Upper" FontFamily="Consolas"/>
             </StackPanel>
 
             <Grid Grid.Row="3" Grid.ColumnSpan="3">

@@ -23,6 +23,8 @@ CREATE TABLE dbo.Proveedor (
     Provincia      nvarchar(100)     NULL,
     Pais           nvarchar(60)      NOT NULL CONSTRAINT DF_Proveedor_Pais DEFAULT (N'España'),
     IBAN           varchar(34)       NULL,
+    FormaPago      tinyint           NOT NULL CONSTRAINT DF_Proveedor_FormaPago DEFAULT (1)
+                   CONSTRAINT CK_Proveedor_FormaPago CHECK (FormaPago IN (1, 2)), -- 1 Transferencia, 2 Domiciliación
     Email          nvarchar(150)     NULL,
     Telefono       varchar(30)       NULL,
     Observaciones  nvarchar(max)     NULL,
@@ -48,7 +50,9 @@ CREATE TABLE dbo.FacturaProveedores (
     PorcIRPF           decimal(5,2)      NULL,
     CuotaIRPF          decimal(12,2)     NULL,
     Total              decimal(12,2)     NOT NULL,
-    IBAN               varchar(34)       NULL,
+    IBAN               varchar(34)       NULL,  -- transferencia: cuenta del proveedor; domiciliación: cuenta de cargo de CEFER
+    FormaPago          tinyint           NOT NULL CONSTRAINT DF_Factura_FormaPago DEFAULT (1)
+                       CONSTRAINT CK_Factura_FormaPago CHECK (FormaPago IN (1, 2)),
     Estado             tinyint           NOT NULL CONSTRAINT DF_Factura_Estado DEFAULT (1)
                        CONSTRAINT CK_Factura_Estado CHECK (Estado IN (1,2,3,4)), -- 1 Recibida, 2 Validada, 3 Pagada, 4 Rechazada/Anulada
     FechaPago          date              NULL,

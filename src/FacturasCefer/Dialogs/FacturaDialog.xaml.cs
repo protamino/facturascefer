@@ -66,6 +66,7 @@ public partial class FacturaDialog : Window
         DpFecha.SelectedDate = f.FechaFactura;
         DpVencimiento.SelectedDate = f.FechaVencimiento;
         TxtIban.Text = Validaciones.FormatearIban(f.IBAN);
+        CmbFormaPago.SelectedIndex = f.FormaPago == FormaPago.Domiciliacion ? 1 : 0;
         TxtConcepto.Text = f.Concepto ?? "";
         TxtBase.Text = Formato.Importe(f.BaseImponible);
         TxtPorcIva.Text = Formato.Porcentaje(f.PorcIVA);
@@ -105,6 +106,7 @@ public partial class FacturaDialog : Window
         f.FechaFactura = fecha;
         f.FechaVencimiento = DpVencimiento.SelectedDate;
         f.IBAN = iban.Length > 0 ? iban : null;
+        f.FormaPago = CmbFormaPago.SelectedIndex == 1 ? FormaPago.Domiciliacion : FormaPago.Transferencia;
         f.Concepto = TxtConcepto.Text.Trim();
         f.BaseImponible = b;
         f.PorcIVA = piva;
@@ -133,6 +135,14 @@ public partial class FacturaDialog : Window
         {
             BtnGuardar.IsEnabled = true;
         }
+    }
+
+    private void CmbFormaPago_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (LblIban is null) return; // durante InitializeComponent
+        LblIban.Text = CmbFormaPago.SelectedIndex == 1
+            ? "Cuenta de cargo (cuenta de CEFER donde se cobra el recibo)"
+            : "IBAN del proveedor";
     }
 
     private bool Leer(TextBox tb, out decimal? valor)

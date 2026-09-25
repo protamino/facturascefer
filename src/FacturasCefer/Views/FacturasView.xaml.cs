@@ -47,6 +47,7 @@ public partial class FacturasView : UserControl
         _cargandoProveedores = true;
         ChkRecibida.IsChecked = ChkValidada.IsChecked = ChkPagada.IsChecked = ChkRechazada.IsChecked = true;
         DpDesde.SelectedDate = DpHasta.SelectedDate = null;
+        CmbFormaPago.SelectedIndex = 0;
         TxtBuscar.Text = "";
         _cargandoProveedores = false;
         _debounce.Stop();
@@ -88,6 +89,7 @@ public partial class FacturasView : UserControl
         var f = new FiltroFacturas
         {
             IdProveedor = (CmbProveedor.SelectedItem as OpcionProveedor)?.Id,
+            FormaPago = CmbFormaPago.SelectedIndex switch { 1 => FormaPago.Transferencia, 2 => FormaPago.Domiciliacion, _ => null },
             Texto = TxtBuscar.Text,
             PorVencimiento = CmbCampoFecha.SelectedIndex == 1,
             Desde = DpDesde.SelectedDate,
@@ -137,6 +139,7 @@ public partial class FacturasView : UserControl
         ChkRecibida.IsChecked = ChkValidada.IsChecked = true;
         ChkPagada.IsChecked = ChkRechazada.IsChecked = false;
         CmbProveedor.SelectedIndex = 0;
+        CmbFormaPago.SelectedIndex = 0;
         CmbCampoFecha.SelectedIndex = 0;
         DpDesde.SelectedDate = DpHasta.SelectedDate = null;
         TxtBuscar.Text = "";

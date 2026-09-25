@@ -41,6 +41,14 @@
             <ComboBox x:Name="CmbProveedor" Width="230" IsEditable="True" IsTextSearchEnabled="True"
                       SelectionChanged="Filtro_Changed" VerticalContentAlignment="Center"/>
 
+            <TextBlock Text="Pago:" Style="{StaticResource Filtro}"/>
+            <ComboBox x:Name="CmbFormaPago" Width="120" SelectedIndex="0" SelectionChanged="Filtro_Changed"
+                      VerticalContentAlignment="Center">
+                <ComboBoxItem Content="(Todas)"/>
+                <ComboBoxItem Content="Transferencia"/>
+                <ComboBoxItem Content="Domiciliación"/>
+            </ComboBox>
+
             <ComboBox x:Name="CmbCampoFecha" Width="120" Margin="14,0,6,0" SelectedIndex="0"
                       SelectionChanged="Filtro_Changed" VerticalContentAlignment="Center">
                 <ComboBoxItem Content="Fecha factura"/>
@@ -99,6 +107,7 @@
                                     ElementStyle="{StaticResource Derecha}"/>
                 <DataGridTextColumn Header="Total" Binding="{Binding Total, StringFormat=N2}" Width="90" FontWeight="Bold"
                                     ElementStyle="{StaticResource Derecha}"/>
+                <DataGridTextColumn Header="Pago" Binding="{Binding FormaPagoCorta}" Width="60"/>
                 <DataGridTextColumn Header="Estado" Binding="{Binding EstadoTexto}" Width="115"/>
                 <DataGridTextColumn Header="Pagada el" Binding="{Binding FechaPago, StringFormat=dd/MM/yyyy}" Width="85"/>
                 <DataGridTextColumn Header="IBAN" Binding="{Binding AvisoIban}" Width="45">
