@@ -19,7 +19,6 @@ namespace FacturasCefer.Views;
 /// </summary>
 public partial class SubirFacturasView : UserControl
 {
-    private static readonly CultureInfo Es = new("es-ES");
     private static readonly Brush FondoDudoso = new SolidColorBrush(Color.FromRgb(0xFF, 0xF3, 0xC4));
 
     private readonly Queue<PdfEnRevision> _cola = new();
@@ -263,12 +262,12 @@ public partial class SubirFacturasView : UserControl
         DpFecha.SelectedDate = ParseFecha(ia.FechaFactura);
         DpVencimiento.SelectedDate = ParseFecha(ia.FechaVencimiento);
         TxtConcepto.Text = ia.Concepto ?? "";
-        TxtBase.Text = Fmt(ia.BaseImponible);
-        TxtPorcIva.Text = FmtPorc(ia.PorcIva);
-        TxtCuotaIva.Text = Fmt(ia.CuotaIva);
-        TxtPorcIrpf.Text = FmtPorc(ia.PorcIrpf);
-        TxtCuotaIrpf.Text = Fmt(ia.CuotaIrpf);
-        TxtTotal.Text = Fmt(ia.Total);
+        TxtBase.Text = Formato.Importe(ia.BaseImponible);
+        TxtPorcIva.Text = Formato.Porcentaje(ia.PorcIva);
+        TxtCuotaIva.Text = Formato.Importe(ia.CuotaIva);
+        TxtPorcIrpf.Text = Formato.Porcentaje(ia.PorcIrpf);
+        TxtCuotaIrpf.Text = Formato.Importe(ia.CuotaIrpf);
+        TxtTotal.Text = Formato.Importe(ia.Total);
         TxtPagDesde.Text = ia.PaginaInicio.ToString();
         TxtPagHasta.Text = ia.PaginaFin.ToString();
         TxtTotalPaginas.Text = $"(el PDF tiene {pdf.Paginas})";
@@ -300,12 +299,12 @@ public partial class SubirFacturasView : UserControl
         ia.FechaFactura = DpFecha.SelectedDate?.ToString("yyyy-MM-dd") ?? "";
         ia.FechaVencimiento = DpVencimiento.SelectedDate?.ToString("yyyy-MM-dd") ?? "";
         ia.Concepto = TxtConcepto.Text.Trim();
-        if (TryDec(TxtBase.Text, out var v)) ia.BaseImponible = v;
-        if (TryDec(TxtPorcIva.Text, out v)) ia.PorcIva = v;
-        if (TryDec(TxtCuotaIva.Text, out v)) ia.CuotaIva = v;
-        if (TryDec(TxtPorcIrpf.Text, out v)) ia.PorcIrpf = v;
-        if (TryDec(TxtCuotaIrpf.Text, out v)) ia.CuotaIrpf = v;
-        if (TryDec(TxtTotal.Text, out v)) ia.Total = v;
+        if (Formato.TryImporte(TxtBase.Text, out var v)) ia.BaseImponible = v;
+        if (Formato.TryImporte(TxtPorcIva.Text, out v)) ia.PorcIva = v;
+        if (Formato.TryImporte(TxtCuotaIva.Text, out v)) ia.CuotaIva = v;
+        if (Formato.TryImporte(TxtPorcIrpf.Text, out v)) ia.PorcIrpf = v;
+        if (Formato.TryImporte(TxtCuotaIrpf.Text, out v)) ia.CuotaIrpf = v;
+        if (Formato.TryImporte(TxtTotal.Text, out v)) ia.Total = v;
         if (LeerPaginas(out var d, out var h)) { ia.PaginaInicio = d; ia.PaginaFin = h; }
         fr.Observaciones = TxtObservaciones.Text;
     }
@@ -462,16 +461,16 @@ public partial class SubirFacturasView : UserControl
 
     private void Importe_LostFocus(object sender, RoutedEventArgs e)
     {
-        if (sender is TextBox tb && TryDec(tb.Text, out var v) && v is not null) tb.Text = Fmt(v);
+        if (sender is TextBox tb && Formato.TryImporte(tb.Text, out var v) && v is not null) tb.Text = Formato.Importe(v);
         ActualizarCuadre();
     }
 
     private void ActualizarCuadre()
     {
         TxtCuadre.Text = "";
-        if (!TryDec(TxtBase.Text, out var b) || !TryDec(TxtTotal.Text, out var t) || b is null || t is null) return;
-        TryDec(TxtCuotaIva.Text, out var iva);
-        TryDec(TxtCuotaIrpf.Text, out var irpf);
+        if (!Formato.TryImporte(TxtBase.Text, out var b) || !Formato.TryImporte(TxtTotal.Text, out var t) || b is null || t is null) return;
+        Formato.TryImporte(TxtCuotaIva.Text, out var iva);
+        Formato.TryImporte(TxtCuotaIrpf.Text, out var irpf);
         var calculado = b.Value + (iva ?? 0) - (irpf ?? 0);
         if (Math.Abs(calculado - t.Value) <= 0.02m)
         {
@@ -481,7 +480,7 @@ public partial class SubirFacturasView : UserControl
         else
         {
             TxtCuadre.Foreground = new SolidColorBrush(Color.FromRgb(0x8A, 0x53, 0x00));
-            TxtCuadre.Text = $"⚠ Base + IVA − IRPF = {Fmt(calculado)} (no cuadra)";
+            TxtCuadre.Text = $"⚠ Base + IVA − IRPF = {Formato.Importe(calculado)} (no cuadra)";
         }
     }
 
@@ -578,12 +577,12 @@ public partial class SubirFacturasView : UserControl
         if (numero.Length == 0) { Error("El nº de factura es obligatorio.", TxtNumero); return; }
         if (DpFecha.SelectedDate is not DateTime fecha) { Error("La fecha de factura es obligatoria.", DpFecha); return; }
 
-        if (!TryDec(TxtBase.Text, out var baseImp)) { Error("La base imponible no es un importe válido.", TxtBase); return; }
-        if (!TryDec(TxtPorcIva.Text, out var porcIva)) { Error("El % de IVA no es válido.", TxtPorcIva); return; }
-        if (!TryDec(TxtCuotaIva.Text, out var cuotaIva)) { Error("El IVA no es un importe válido.", TxtCuotaIva); return; }
-        if (!TryDec(TxtPorcIrpf.Text, out var porcIrpf)) { Error("El % de IRPF no es válido.", TxtPorcIrpf); return; }
-        if (!TryDec(TxtCuotaIrpf.Text, out var cuotaIrpf)) { Error("La retención IRPF no es un importe válido.", TxtCuotaIrpf); return; }
-        if (!TryDec(TxtTotal.Text, out var total) || total is null) { Error("El total es obligatorio y debe ser un importe válido.", TxtTotal); return; }
+        if (!Formato.TryImporte(TxtBase.Text, out var baseImp)) { Error("La base imponible no es un importe válido.", TxtBase); return; }
+        if (!Formato.TryImporte(TxtPorcIva.Text, out var porcIva)) { Error("El % de IVA no es válido.", TxtPorcIva); return; }
+        if (!Formato.TryImporte(TxtCuotaIva.Text, out var cuotaIva)) { Error("El IVA no es un importe válido.", TxtCuotaIva); return; }
+        if (!Formato.TryImporte(TxtPorcIrpf.Text, out var porcIrpf)) { Error("El % de IRPF no es válido.", TxtPorcIrpf); return; }
+        if (!Formato.TryImporte(TxtCuotaIrpf.Text, out var cuotaIrpf)) { Error("La retención IRPF no es un importe válido.", TxtCuotaIrpf); return; }
+        if (!Formato.TryImporte(TxtTotal.Text, out var total) || total is null) { Error("El total es obligatorio y debe ser un importe válido.", TxtTotal); return; }
         if (!LeerPaginas(out var desde, out var hasta)) { Error($"Rango de páginas no válido (1 a {pdf.Paginas}).", TxtPagDesde); return; }
 
         // --- Avisos que se pueden confirmar
@@ -597,7 +596,7 @@ public partial class SubirFacturasView : UserControl
         {
             var calculado = baseImp.Value + (cuotaIva ?? 0) - (cuotaIrpf ?? 0);
             if (Math.Abs(calculado - total.Value) > 0.02m &&
-                !Confirmar($"Base + IVA − IRPF = {Fmt(calculado)} €, pero el total es {Fmt(total)} €.\n\n¿Guardar igualmente?"))
+                !Confirmar($"Base + IVA − IRPF = {Formato.Importe(calculado)} €, pero el total es {Formato.Importe(total)} €.\n\n¿Guardar igualmente?"))
                 return;
         }
 
@@ -754,29 +753,6 @@ public partial class SubirFacturasView : UserControl
 
     private static DateTime? ParseFecha(string? s) =>
         DateTime.TryParseExact(s, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var d) ? d : null;
-
-    private static string Fmt(decimal? v) => v?.ToString("#,##0.00", Es) ?? "";
-    private static string FmtPorc(decimal? v) => v?.ToString("0.##", Es) ?? "";
-
-    /// <summary>
-    /// Importe en formato español ("1.060,00") o con punto decimal ("1060.00"). Vacío = null.
-    /// Devuelve false si hay texto que no es un importe.
-    /// </summary>
-    private static bool TryDec(string? texto, out decimal? valor)
-    {
-        valor = null;
-        var s = (texto ?? "").Replace("€", "").Replace("%", "").Replace(" ", "").Trim();
-        if (s.Length == 0) return true;
-
-        var cultura = Es;
-        var ultimoPunto = s.LastIndexOf('.');
-        if (!s.Contains(',') && ultimoPunto >= 0 && s.IndexOf('.') == ultimoPunto && s.Length - ultimoPunto - 1 <= 2)
-            cultura = CultureInfo.InvariantCulture; // "1060.5" / "1060.50": punto decimal
-
-        if (!decimal.TryParse(s, NumberStyles.Number, cultura, out var d)) return false;
-        valor = d;
-        return true;
-    }
 
     private static void BorrarTemporales(PdfEnRevision pdf)
     {

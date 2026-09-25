@@ -12,16 +12,15 @@
             </DockPanel>
         </Border>
 
-        <TabControl Margin="8" Padding="8">
+        <TabControl x:Name="Tabs" Margin="8" Padding="8">
             <TabItem Header="Subir facturas">
                 <views:SubirFacturasView x:Name="Subir"/>
             </TabItem>
-            <TabItem Header="Facturas">
-                <TextBlock Text="Listado de facturas y estados: pendiente (Fase 3)."
-                           Foreground="Gray" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            <TabItem x:Name="TabFacturas" Header="Facturas">
+                <views:FacturasView x:Name="Facturas"/>
             </TabItem>
             <TabItem Header="Proveedores">
-                <views:ProveedoresView/>
+                <views:ProveedoresView x:Name="Proveedores" VerFacturas="Proveedores_VerFacturas"/>
             </TabItem>
         </TabControl>
     </DockPanel>

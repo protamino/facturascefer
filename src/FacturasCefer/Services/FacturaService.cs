@@ -14,7 +14,15 @@ public sealed class OriginalGuardado
     public string? RutaUnc { get; set; }
 }
 
-/// <summary>Alta de facturas: copia de PDFs a la carpeta de red + INSERT en FacturaProveedores e histórico.</summary>
+public enum AccionEstado { Validar, Pagar, Rechazar, Deshacer }
+
+/// <summary>Resultado de un cambio de estado masivo: cuántas se aplicaron y por qué se omitieron las demás.</summary>
+public sealed record ResultadoCambio(int Aplicadas, List<string> Omitidas);
+
+/// <summary>
+/// Facturas de proveedores: alta (copia de PDFs a la carpeta de red + INSERT), listado,
+/// edición y cambios de estado con histórico.
+/// </summary>
 public sealed class FacturaService
 {
     private readonly AppConfig _cfg;
@@ -157,5 +165,280 @@ public sealed class FacturaService
 
         await tx.CommitAsync(ct);
         return id;
+    }
+
+    // ------------------------------------------------------------------ Listado
+
+    private const string SelectListado = @"
+        SELECT f.Id, f.IdProveedor, p.RazonSocial, p.CIF, p.IBAN AS IbanProveedor, f.NumeroFactura, f.Concepto,
+               f.FechaFactura, f.FechaVencimiento, f.BaseImponible, f.PorcIVA, f.CuotaIVA, f.PorcIRPF, f.CuotaIRPF,
+               f.Total, f.IBAN, f.Estado, f.FechaPago, f.MotivoRechazo, f.RutaPdf, f.RutaPdfOriginal,
+               f.Observaciones, f.FechaRegistro
+        FROM dbo.FacturaProveedores f
+        JOIN dbo.Proveedor p ON p.Id = f.IdProveedor";
+
+    public async Task<List<FacturaListado>> BuscarAsync(FiltroFacturas filtro, CancellationToken ct = default)
+    {
+        var lista = new List<FacturaListado>();
+        if (filtro.Estados.Count == 0) return lista;
+
+        await using var cn = Conexion();
+        await cn.OpenAsync(ct);
+        await using var cmd = cn.CreateCommand();
+
+        var estados = new List<string>();
+        for (var i = 0; i < filtro.Estados.Count; i++)
+        {
+            estados.Add("@e" + i);
+            cmd.Parameters.AddWithValue("@e" + i, (byte)filtro.Estados[i]);
+        }
+        var campoFecha = filtro.PorVencimiento ? "f.FechaVencimiento" : "f.FechaFactura";
+
+        cmd.CommandText = SelectListado + $@"
+            WHERE f.Estado IN ({string.Join(",", estados)})
+              AND (@prov IS NULL OR f.IdProveedor = @prov)
+              AND (@desde IS NULL OR {campoFecha} >= @desde)
+              AND (@hasta IS NULL OR {campoFecha} <= @hasta)
+              AND (@t IS NULL OR f.NumeroFactura LIKE '%' + @t + '%' OR f.Concepto LIKE '%' + @t + '%'
+                   OR p.RazonSocial LIKE '%' + @t + '%' OR p.CIF LIKE '%' + @t + '%')
+            ORDER BY f.FechaFactura DESC, f.Id DESC";
+        cmd.Parameters.AddWithValue("@prov", (object?)filtro.IdProveedor ?? DBNull.Value);
+        cmd.Parameters.Add("@desde", System.Data.SqlDbType.Date).Value = (object?)filtro.Desde?.Date ?? DBNull.Value;
+        cmd.Parameters.Add("@hasta", System.Data.SqlDbType.Date).Value = (object?)filtro.Hasta?.Date ?? DBNull.Value;
+        cmd.Parameters.AddWithValue("@t", SqlUtil.DbVal(filtro.Texto));
+
+        await using var rd = await cmd.ExecuteReaderAsync(ct);
+        while (await rd.ReadAsync(ct)) lista.Add(LeerListado(rd));
+        return lista;
+    }
+
+    public async Task<FacturaListado?> ObtenerAsync(int id, CancellationToken ct = default)
+    {
+        await using var cn = Conexion();
+        await cn.OpenAsync(ct);
+        await using var cmd = cn.CreateCommand();
+        cmd.CommandText = SelectListado + " WHERE f.Id = @id";
+        cmd.Parameters.AddWithValue("@id", id);
+        await using var rd = await cmd.ExecuteReaderAsync(ct);
+        return await rd.ReadAsync(ct) ? LeerListado(rd) : null;
+    }
+
+    public async Task<List<CambioEstado>> HistorialAsync(int idFactura, CancellationToken ct = default)
+    {
+        await using var cn = Conexion();
+        await cn.OpenAsync(ct);
+        await using var cmd = cn.CreateCommand();
+        // El nombre de usuario está en DMSTRA (mismo servidor).
+        cmd.CommandText = @"SELECT h.Fecha, h.EstadoAnterior, h.EstadoNuevo,
+                                   ISNULL(LTRIM(RTRIM(u.NombreUser)), CAST(h.IdUsuario AS varchar(12))), h.Comentario
+                            FROM dbo.FacturaEstadoHistorico h
+                            LEFT JOIN DMSTRA.dbo.Usuarios u ON u.idUsuario = h.IdUsuario
+                            WHERE h.IdFactura = @id
+                            ORDER BY h.Fecha DESC, h.Id DESC";
+        cmd.Parameters.AddWithValue("@id", idFactura);
+
+        var lista = new List<CambioEstado>();
+        await using var rd = await cmd.ExecuteReaderAsync(ct);
+        while (await rd.ReadAsync(ct))
+            lista.Add(new CambioEstado(
+                rd.GetDateTime(0),
+                rd.IsDBNull(1) ? null : (EstadoFactura)rd.GetByte(1),
+                (EstadoFactura)rd.GetByte(2),
+                rd.GetString(3),
+                rd.IsDBNull(4) ? null : rd.GetString(4)));
+        return lista;
+    }
+
+    // ------------------------------------------------------------------ Edición
+
+    /// <summary>Guarda los datos editables de la factura. Solo se permite en estado Recibida o Validada.</summary>
+    public async Task ActualizarAsync(FacturaListado f, CancellationToken ct = default)
+    {
+        await using var cn = Conexion();
+        await cn.OpenAsync(ct);
+        await using var cmd = cn.CreateCommand();
+        cmd.CommandText = @"UPDATE dbo.FacturaProveedores
+                            SET NumeroFactura = @num, Concepto = @conc, FechaFactura = @fec, FechaVencimiento = @vto,
+                                BaseImponible = @base, PorcIVA = @piva, CuotaIVA = @civa, PorcIRPF = @pirpf,
+                                CuotaIRPF = @cirpf, Total = @total, IBAN = @iban, Observaciones = @obs
+                            WHERE Id = @id AND Estado IN (1, 2)";
+        cmd.Parameters.AddWithValue("@id", f.Id);
+        cmd.Parameters.AddWithValue("@num", f.NumeroFactura.Trim());
+        cmd.Parameters.AddWithValue("@conc", SqlUtil.DbVal(f.Concepto));
+        cmd.Parameters.AddWithValue("@fec", f.FechaFactura.Date);
+        cmd.Parameters.AddWithValue("@vto", (object?)f.FechaVencimiento?.Date ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@base", (object?)f.BaseImponible ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@piva", (object?)f.PorcIVA ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@civa", (object?)f.CuotaIVA ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@pirpf", (object?)f.PorcIRPF ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@cirpf", (object?)f.CuotaIRPF ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@total", f.Total);
+        cmd.Parameters.AddWithValue("@iban", SqlUtil.DbVal(Validaciones.NormalizarIban(f.IBAN)));
+        cmd.Parameters.AddWithValue("@obs", SqlUtil.DbVal(f.Observaciones));
+        try
+        {
+            if (await cmd.ExecuteNonQueryAsync(ct) == 0)
+                throw new ReglaNegocioException("La factura ya no se puede editar: su estado ha cambiado. Actualiza el listado.");
+        }
+        catch (SqlException ex) when (SqlUtil.EsDuplicado(ex))
+        {
+            throw new ReglaNegocioException($"Ya existe otra factura nº {f.NumeroFactura} de este proveedor.");
+        }
+    }
+
+    // ------------------------------------------------------------------ Estados
+
+    /// <summary>
+    /// Aplica una acción de estado a varias facturas (cada una en su transacción). Las que no la admiten
+    /// se omiten con el motivo. Flujo: Recibida → Validada → Pagada; Recibida/Validada → Rechazada;
+    /// Deshacer vuelve al estado anterior del último cambio (nunca hacia Pagada ni Rechazada).
+    /// </summary>
+    public async Task<ResultadoCambio> CambiarEstadoAsync(IEnumerable<int> ids, AccionEstado accion, DateTime? fechaPago,
+        string? comentario, int idUsuario, CancellationToken ct = default)
+    {
+        var aplicadas = 0;
+        var omitidas = new List<string>();
+
+        await using var cn = Conexion();
+        await cn.OpenAsync(ct);
+
+        foreach (var id in ids)
+        {
+            await using var tx = (SqlTransaction)await cn.BeginTransactionAsync(ct);
+
+            EstadoFactura actual;
+            string numero;
+            await using (var sel = cn.CreateCommand())
+            {
+                sel.Transaction = tx;
+                sel.CommandText = "SELECT Estado, NumeroFactura FROM dbo.FacturaProveedores WITH (UPDLOCK) WHERE Id = @id";
+                sel.Parameters.AddWithValue("@id", id);
+                await using var rd = await sel.ExecuteReaderAsync(ct);
+                if (!await rd.ReadAsync(ct)) { omitidas.Add($"Id {id}: no existe."); continue; }
+                actual = (EstadoFactura)rd.GetByte(0);
+                numero = rd.GetString(1);
+            }
+
+            EstadoFactura? nuevo = null;
+            string? motivo = null;
+            string? textoHist = comentario;
+            switch (accion)
+            {
+                case AccionEstado.Validar:
+                    if (actual == EstadoFactura.Recibida) nuevo = EstadoFactura.Validada;
+                    else motivo = $"está {Textos.Estado(actual)}; solo se validan las Recibidas.";
+                    break;
+
+                case AccionEstado.Pagar:
+                    if (actual == EstadoFactura.Validada)
+                    {
+                        nuevo = EstadoFactura.Pagada;
+                        textoHist = $"Pagada el {fechaPago:dd/MM/yyyy}" + (string.IsNullOrWhiteSpace(comentario) ? "" : ". " + comentario.Trim());
+                    }
+                    else motivo = actual == EstadoFactura.Recibida
+                        ? "hay que validarla antes de marcarla pagada."
+                        : $"está {Textos.Estado(actual)}.";
+                    break;
+
+                case AccionEstado.Rechazar:
+                    if (actual is EstadoFactura.Recibida or EstadoFactura.Validada) nuevo = EstadoFactura.Rechazada;
+                    else motivo = $"está {Textos.Estado(actual)}; solo se rechazan Recibidas o Validadas.";
+                    break;
+
+                case AccionEstado.Deshacer:
+                    await using (var ult = cn.CreateCommand())
+                    {
+                        ult.Transaction = tx;
+                        ult.CommandText = @"SELECT TOP 1 EstadoAnterior FROM dbo.FacturaEstadoHistorico
+                                            WHERE IdFactura = @id ORDER BY Fecha DESC, Id DESC";
+                        ult.Parameters.AddWithValue("@id", id);
+                        var r = await ult.ExecuteScalarAsync(ct);
+                        var anterior = r is null or DBNull ? (EstadoFactura?)null : (EstadoFactura)(byte)r;
+                        if (anterior is null) motivo = "no hay ningún cambio de estado que deshacer.";
+                        else if (anterior is EstadoFactura.Pagada or EstadoFactura.Rechazada)
+                            motivo = $"volvería a {Textos.Estado(anterior.Value)}; usa el botón correspondiente.";
+                        else
+                        {
+                            nuevo = anterior;
+                            textoHist = $"Deshacer ({Textos.Estado(actual)} → {Textos.Estado(anterior.Value)})"
+                                        + (string.IsNullOrWhiteSpace(comentario) ? "" : ". " + comentario.Trim());
+                        }
+                    }
+                    break;
+            }
+
+            if (nuevo is null)
+            {
+                omitidas.Add($"Nº {numero}: {motivo}");
+                await tx.RollbackAsync(ct);
+                continue;
+            }
+
+            await using (var upd = cn.CreateCommand())
+            {
+                upd.Transaction = tx;
+                upd.CommandText = @"UPDATE dbo.FacturaProveedores
+                                    SET Estado = @n,
+                                        FechaPago = CASE WHEN @n = 3 THEN @fp ELSE NULL END,
+                                        MotivoRechazo = CASE WHEN @n = 4 THEN @mot ELSE NULL END
+                                    WHERE Id = @id";
+                upd.Parameters.AddWithValue("@n", (byte)nuevo.Value);
+                upd.Parameters.Add("@fp", System.Data.SqlDbType.Date).Value = (object?)fechaPago?.Date ?? DBNull.Value;
+                upd.Parameters.AddWithValue("@mot", SqlUtil.DbVal(accion == AccionEstado.Rechazar ? comentario : null));
+                upd.Parameters.AddWithValue("@id", id);
+                await upd.ExecuteNonQueryAsync(ct);
+            }
+
+            await using (var hist = cn.CreateCommand())
+            {
+                hist.Transaction = tx;
+                hist.CommandText = @"INSERT INTO dbo.FacturaEstadoHistorico (IdFactura, EstadoAnterior, EstadoNuevo, IdUsuario, Comentario)
+                                     VALUES (@id, @ant, @nue, @usr, @com)";
+                hist.Parameters.AddWithValue("@id", id);
+                hist.Parameters.AddWithValue("@ant", (byte)actual);
+                hist.Parameters.AddWithValue("@nue", (byte)nuevo.Value);
+                hist.Parameters.AddWithValue("@usr", idUsuario);
+                hist.Parameters.AddWithValue("@com", SqlUtil.DbVal(textoHist is { Length: > 500 } ? textoHist[..500] : textoHist));
+                await hist.ExecuteNonQueryAsync(ct);
+            }
+
+            await tx.CommitAsync(ct);
+            aplicadas++;
+        }
+
+        return new ResultadoCambio(aplicadas, omitidas);
+    }
+
+    private static FacturaListado LeerListado(SqlDataReader rd)
+    {
+        decimal? Dec(string c) { var i = rd.GetOrdinal(c); return rd.IsDBNull(i) ? null : rd.GetDecimal(i); }
+        DateTime? Fecha(string c) { var i = rd.GetOrdinal(c); return rd.IsDBNull(i) ? null : rd.GetDateTime(i); }
+
+        return new FacturaListado
+        {
+            Id = rd.GetInt32(rd.GetOrdinal("Id")),
+            IdProveedor = rd.GetInt32(rd.GetOrdinal("IdProveedor")),
+            Proveedor = rd.Str("RazonSocial") ?? "",
+            CIF = rd.Str("CIF") ?? "",
+            IbanProveedor = rd.Str("IbanProveedor"),
+            NumeroFactura = rd.Str("NumeroFactura") ?? "",
+            Concepto = rd.Str("Concepto"),
+            FechaFactura = rd.GetDateTime(rd.GetOrdinal("FechaFactura")),
+            FechaVencimiento = Fecha("FechaVencimiento"),
+            BaseImponible = Dec("BaseImponible"),
+            PorcIVA = Dec("PorcIVA"),
+            CuotaIVA = Dec("CuotaIVA"),
+            PorcIRPF = Dec("PorcIRPF"),
+            CuotaIRPF = Dec("CuotaIRPF"),
+            Total = rd.GetDecimal(rd.GetOrdinal("Total")),
+            IBAN = rd.Str("IBAN"),
+            Estado = (EstadoFactura)rd.GetByte(rd.GetOrdinal("Estado")),
+            FechaPago = Fecha("FechaPago"),
+            MotivoRechazo = rd.Str("MotivoRechazo"),
+            RutaPdf = rd.Str("RutaPdf") ?? "",
+            RutaPdfOriginal = rd.Str("RutaPdfOriginal"),
+            Observaciones = rd.Str("Observaciones"),
+            FechaRegistro = rd.GetDateTime(rd.GetOrdinal("FechaRegistro")),
+        };
     }
 }

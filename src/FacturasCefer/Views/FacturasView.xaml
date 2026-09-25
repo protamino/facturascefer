@@ -1,0 +1,115 @@
+<UserControl x:Class="FacturasCefer.Views.FacturasView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <Style x:Key="Derecha" TargetType="TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="Margin" Value="0,0,4,0"/>
+        </Style>
+        <Style x:Key="Fila" TargetType="DataGridRow">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Vencida}" Value="True">
+                    <Setter Property="Foreground" Value="#B71C1C"/>
+                    <Setter Property="ToolTip" Value="Vencida y sin pagar"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Anulada}" Value="True">
+                    <Setter Property="Foreground" Value="#999"/>
+                    <Setter Property="FontStyle" Value="Italic"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="Filtro" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="14,0,6,0"/>
+        </Style>
+    </UserControl.Resources>
+
+    <DockPanel>
+        <!-- Filtros -->
+        <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+            <TextBlock Text="Estado:" VerticalAlignment="Center" Margin="0,0,6,0"/>
+            <CheckBox x:Name="ChkRecibida" Content="Recibida" IsChecked="True" VerticalAlignment="Center" Margin="0,0,8,0"
+                      Checked="Filtro_Changed" Unchecked="Filtro_Changed"/>
+            <CheckBox x:Name="ChkValidada" Content="Validada" IsChecked="True" VerticalAlignment="Center" Margin="0,0,8,0"
+                      Checked="Filtro_Changed" Unchecked="Filtro_Changed"/>
+            <CheckBox x:Name="ChkPagada" Content="Pagada" VerticalAlignment="Center" Margin="0,0,8,0"
+                      Checked="Filtro_Changed" Unchecked="Filtro_Changed"/>
+            <CheckBox x:Name="ChkRechazada" Content="Rechazada/Anulada" VerticalAlignment="Center"
+                      Checked="Filtro_Changed" Unchecked="Filtro_Changed"/>
+
+            <TextBlock Text="Proveedor:" Style="{StaticResource Filtro}"/>
+            <ComboBox x:Name="CmbProveedor" Width="230" IsEditable="True" IsTextSearchEnabled="True"
+                      SelectionChanged="Filtro_Changed" VerticalContentAlignment="Center"/>
+
+            <ComboBox x:Name="CmbCampoFecha" Width="120" Margin="14,0,6,0" SelectedIndex="0"
+                      SelectionChanged="Filtro_Changed" VerticalContentAlignment="Center">
+                <ComboBoxItem Content="Fecha factura"/>
+                <ComboBoxItem Content="Vencimiento"/>
+            </ComboBox>
+            <TextBlock Text="desde" VerticalAlignment="Center" Margin="0,0,4,0"/>
+            <DatePicker x:Name="DpDesde" Width="115" SelectedDateChanged="Filtro_Changed"/>
+            <TextBlock Text="hasta" VerticalAlignment="Center" Margin="6,0,4,0"/>
+            <DatePicker x:Name="DpHasta" Width="115" SelectedDateChanged="Filtro_Changed"/>
+
+            <TextBlock Text="Buscar:" Style="{StaticResource Filtro}"/>
+            <TextBox x:Name="TxtBuscar" Width="180" TextChanged="TxtBuscar_TextChanged"
+                     ToolTip="Nº de factura, concepto, proveedor o CIF"/>
+            <Button Content="Limpiar filtros" Margin="10,0,0,0" Click="BtnLimpiar_Click"/>
+        </WrapPanel>
+
+        <!-- Acciones -->
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+            <Button x:Name="BtnValidar" Content="✔ Validar" Style="{StaticResource BotonBarra}" Click="BtnValidar_Click"/>
+            <Button x:Name="BtnPagar" Content="€ Marcar pagada…" Style="{StaticResource BotonBarra}" Click="BtnPagar_Click"/>
+            <Button x:Name="BtnRechazar" Content="✖ Rechazar / anular…" Style="{StaticResource BotonBarra}" Click="BtnRechazar_Click"/>
+            <Button x:Name="BtnDeshacer" Content="↶ Deshacer último cambio" Style="{StaticResource BotonBarra}" Click="BtnDeshacer_Click"/>
+            <Separator Width="16" Background="Transparent"/>
+            <Button x:Name="BtnFicha" Content="Ficha…" Style="{StaticResource BotonBarra}" Click="BtnFicha_Click"/>
+            <Button x:Name="BtnPdf" Content="Abrir PDF" Style="{StaticResource BotonBarra}" Click="BtnPdf_Click"/>
+            <Button Content="Actualizar" Click="BtnActualizar_Click"/>
+        </StackPanel>
+
+        <!-- Pie -->
+        <TextBlock x:Name="TxtResumen" DockPanel.Dock="Bottom" Foreground="#444" Margin="0,6,0,0"/>
+
+        <DataGrid x:Name="Grid" Style="{StaticResource Tabla}" SelectionMode="Extended" RowStyle="{StaticResource Fila}"
+                  CanUserSortColumns="True" MouseDoubleClick="Grid_MouseDoubleClick" SelectionChanged="Grid_SelectionChanged">
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem x:Name="MnuValidar" Header="Validar" Click="BtnValidar_Click"/>
+                    <MenuItem x:Name="MnuPagar" Header="Marcar pagada…" Click="BtnPagar_Click"/>
+                    <MenuItem x:Name="MnuRechazar" Header="Rechazar / anular…" Click="BtnRechazar_Click"/>
+                    <MenuItem x:Name="MnuDeshacer" Header="Deshacer último cambio" Click="BtnDeshacer_Click"/>
+                    <Separator/>
+                    <MenuItem x:Name="MnuFicha" Header="Ficha…" Click="BtnFicha_Click"/>
+                    <MenuItem x:Name="MnuPdf" Header="Abrir PDF" Click="BtnPdf_Click"/>
+                </ContextMenu>
+            </DataGrid.ContextMenu>
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Proveedor" Binding="{Binding Proveedor}" Width="2*"/>
+                <DataGridTextColumn Header="Nº factura" Binding="{Binding NumeroFactura}" Width="120"/>
+                <DataGridTextColumn Header="Concepto" Binding="{Binding Concepto}" Width="2*"/>
+                <DataGridTextColumn Header="Fecha" Binding="{Binding FechaFactura, StringFormat=dd/MM/yyyy}" Width="85"/>
+                <DataGridTextColumn Header="Vencimiento" Binding="{Binding FechaVencimiento, StringFormat=dd/MM/yyyy}" Width="90"/>
+                <DataGridTextColumn Header="Base" Binding="{Binding BaseImponible, StringFormat=N2}" Width="85"
+                                    ElementStyle="{StaticResource Derecha}"/>
+                <DataGridTextColumn Header="IVA" Binding="{Binding CuotaIVA, StringFormat=N2}" Width="75"
+                                    ElementStyle="{StaticResource Derecha}"/>
+                <DataGridTextColumn Header="IRPF" Binding="{Binding CuotaIRPF, StringFormat=N2}" Width="70"
+                                    ElementStyle="{StaticResource Derecha}"/>
+                <DataGridTextColumn Header="Total" Binding="{Binding Total, StringFormat=N2}" Width="90" FontWeight="Bold"
+                                    ElementStyle="{StaticResource Derecha}"/>
+                <DataGridTextColumn Header="Estado" Binding="{Binding EstadoTexto}" Width="115"/>
+                <DataGridTextColumn Header="Pagada el" Binding="{Binding FechaPago, StringFormat=dd/MM/yyyy}" Width="85"/>
+                <DataGridTextColumn Header="IBAN" Binding="{Binding AvisoIban}" Width="45">
+                    <DataGridTextColumn.CellStyle>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="ToolTip" Value="El IBAN de la factura no coincide con el del proveedor"/>
+                            <Setter Property="Foreground" Value="#B71C1C"/>
+                        </Style>
+                    </DataGridTextColumn.CellStyle>
+                </DataGridTextColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</UserControl>

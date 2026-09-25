@@ -1,0 +1,25 @@
+<Window x:Class="FacturasCefer.Dialogs.CambioEstadoDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Cambiar estado" Width="440" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <StackPanel Margin="20">
+        <TextBlock x:Name="TxtMensaje" TextWrapping="Wrap" Margin="0,0,0,8"/>
+
+        <StackPanel x:Name="PanelFecha" Visibility="Collapsed">
+            <TextBlock Text="Fecha de pago *" Style="{StaticResource Etiqueta}"/>
+            <DatePicker x:Name="DpFecha" Width="160" HorizontalAlignment="Left"/>
+        </StackPanel>
+
+        <TextBlock x:Name="LblTexto" Text="Comentario (opcional)" Style="{StaticResource Etiqueta}"/>
+        <TextBox x:Name="TxtTexto" Height="60" AcceptsReturn="True" TextWrapping="Wrap" MaxLength="500"
+                 VerticalContentAlignment="Top"/>
+
+        <TextBlock x:Name="TxtError" Foreground="#C0392B" TextWrapping="Wrap" Margin="0,8,0,0"/>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button x:Name="BtnAceptar" Content="Aceptar" IsDefault="True" MinWidth="90" Margin="0,0,8,0" Click="BtnAceptar_Click"/>
+            <Button Content="Cancelar" IsCancel="True" MinWidth="90"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

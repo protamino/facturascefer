@@ -10,6 +10,7 @@
                 <Button x:Name="BtnEditar" Content="Editar…" Style="{StaticResource BotonBarra}" Click="BtnEditar_Click"/>
                 <Button x:Name="BtnBaja" Content="Dar de baja" Style="{StaticResource BotonBarra}" Click="BtnBaja_Click"/>
                 <Button x:Name="BtnHistIban" Content="Historial IBAN" Style="{StaticResource BotonBarra}" Click="BtnHistIban_Click"/>
+                <Button x:Name="BtnFacturas" Content="Ver facturas" Style="{StaticResource BotonBarra}" Click="BtnFacturas_Click"/>
                 <Button Content="Actualizar" Click="BtnActualizar_Click"/>
             </StackPanel>
             <TextBlock Text="Buscar:" VerticalAlignment="Center" Margin="0,0,6,0"/>

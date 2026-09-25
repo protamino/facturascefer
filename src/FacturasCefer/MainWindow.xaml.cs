@@ -11,6 +11,12 @@ public partial class MainWindow : Window
         TxtUsuario.Text = "Usuario: " + App.Usuario.NombreUser;
     }
 
+    private async void Proveedores_VerFacturas(object? sender, Models.Proveedor p)
+    {
+        await Facturas.FiltrarPorProveedorAsync(p.Id);
+        Tabs.SelectedItem = TabFacturas;
+    }
+
     private void Window_Closing(object? sender, CancelEventArgs e)
     {
         if (Subir.HayPendientes &&

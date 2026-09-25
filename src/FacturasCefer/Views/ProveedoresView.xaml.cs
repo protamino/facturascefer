@@ -48,6 +48,7 @@ public partial class ProveedoresView : UserControl
         var p = Seleccionado;
         BtnEditar.IsEnabled = p is not null;
         BtnHistIban.IsEnabled = p is not null;
+        BtnFacturas.IsEnabled = p is not null;
         BtnBaja.IsEnabled = p is not null;
         BtnBaja.Content = p?.Baja == true ? "Reactivar" : "Dar de baja";
     }
@@ -101,6 +102,14 @@ public partial class ProveedoresView : UserControl
         {
             App.MostrarError(ex, owner);
         }
+    }
+
+    /// <summary>Se pide ver las facturas de un proveedor (lo atiende la ventana principal).</summary>
+    public event EventHandler<Proveedor>? VerFacturas;
+
+    private void BtnFacturas_Click(object sender, RoutedEventArgs e)
+    {
+        if (Seleccionado is { } p) VerFacturas?.Invoke(this, p);
     }
 
     private void BtnHistIban_Click(object sender, RoutedEventArgs e)
