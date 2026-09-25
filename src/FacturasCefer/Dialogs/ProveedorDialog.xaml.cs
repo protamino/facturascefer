@@ -36,7 +36,8 @@ public partial class ProveedorDialog : Window
         TxtRazonSocial.Text = p.RazonSocial;
         TxtCif.Text = p.CIF;
         TxtIban.Text = Validaciones.FormatearIban(p.IBAN);
-        CmbFormaPago.SelectedIndex = p.FormaPago == FormaPago.Domiciliacion ? 1 : 0;
+        CmbFormaPago.SelectedIndex = (int)p.FormaPago - 1;
+        TxtTarjeta.Text = p.Tarjeta;
         TxtDireccion.Text = p.Direccion;
         TxtCp.Text = p.CP;
         TxtPoblacion.Text = p.Poblacion;
@@ -81,6 +82,7 @@ public partial class ProveedorDialog : Window
         _p.CIF = cif;
         _p.IBAN = iban.Length > 0 ? iban : null;
         _p.FormaPago = FormaPagoSeleccionada;
+        _p.Tarjeta = _p.FormaPago == FormaPago.Tarjeta ? Validaciones.EnmascararTarjeta(TxtTarjeta.Text) : null;
         _p.Direccion = TxtDireccion.Text;
         _p.CP = TxtCp.Text;
         _p.Poblacion = TxtPoblacion.Text;
@@ -116,14 +118,15 @@ public partial class ProveedorDialog : Window
     }
 
     private FormaPago FormaPagoSeleccionada =>
-        CmbFormaPago.SelectedIndex == 1 ? FormaPago.Domiciliacion : FormaPago.Transferencia;
+        CmbFormaPago.SelectedIndex >= 0 ? (FormaPago)(CmbFormaPago.SelectedIndex + 1) : FormaPago.Transferencia;
 
     private void CmbFormaPago_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
-        if (LblIban is null) return; // durante InitializeComponent
-        LblIban.Text = FormaPagoSeleccionada == FormaPago.Domiciliacion
-            ? "IBAN del proveedor (opcional si domicilia)"
-            : "IBAN del proveedor";
+        if (LblIban is null || PanelTarjetaProv is null) return; // durante InitializeComponent
+        var fp = FormaPagoSeleccionada;
+        LblIban.Text = fp == FormaPago.Domiciliacion ? "IBAN del proveedor (opcional si domicilia)" : "IBAN del proveedor";
+        PanelIbanProv.Visibility = fp == FormaPago.Tarjeta ? Visibility.Collapsed : Visibility.Visible;
+        PanelTarjetaProv.Visibility = fp == FormaPago.Tarjeta ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void Error(string msg, System.Windows.Controls.Control foco)

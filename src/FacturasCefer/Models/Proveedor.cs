@@ -13,6 +13,9 @@ public sealed class Proveedor
     public string Pais { get; set; } = "España";
     public string? IBAN { get; set; }
     public FormaPago FormaPago { get; set; } = FormaPago.Transferencia;
+
+    /// <summary>Tarjeta habitual (marca + últimos 4 dígitos), si paga con tarjeta.</summary>
+    public string? Tarjeta { get; set; }
     public string? Email { get; set; }
     public string? Telefono { get; set; }
     public string? Observaciones { get; set; }

@@ -66,7 +66,8 @@ public partial class FacturaDialog : Window
         DpFecha.SelectedDate = f.FechaFactura;
         DpVencimiento.SelectedDate = f.FechaVencimiento;
         TxtIban.Text = Validaciones.FormatearIban(f.IBAN);
-        CmbFormaPago.SelectedIndex = f.FormaPago == FormaPago.Domiciliacion ? 1 : 0;
+        CmbFormaPago.SelectedIndex = (int)f.FormaPago - 1;
+        TxtTarjeta.Text = f.Tarjeta ?? "";
         TxtConcepto.Text = f.Concepto ?? "";
         TxtBase.Text = Formato.Importe(f.BaseImponible);
         TxtPorcIva.Text = Formato.Porcentaje(f.PorcIVA);
@@ -106,7 +107,8 @@ public partial class FacturaDialog : Window
         f.FechaFactura = fecha;
         f.FechaVencimiento = DpVencimiento.SelectedDate;
         f.IBAN = iban.Length > 0 ? iban : null;
-        f.FormaPago = CmbFormaPago.SelectedIndex == 1 ? FormaPago.Domiciliacion : FormaPago.Transferencia;
+        f.FormaPago = (FormaPago)(Math.Max(CmbFormaPago.SelectedIndex, 0) + 1);
+        f.Tarjeta = f.FormaPago == FormaPago.Tarjeta ? Validaciones.EnmascararTarjeta(TxtTarjeta.Text) : null;
         f.Concepto = TxtConcepto.Text.Trim();
         f.BaseImponible = b;
         f.PorcIVA = piva;
@@ -139,10 +141,13 @@ public partial class FacturaDialog : Window
 
     private void CmbFormaPago_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (LblIban is null) return; // durante InitializeComponent
+        if (LblIban is null || PanelTarjetaFac is null) return; // durante InitializeComponent
         LblIban.Text = CmbFormaPago.SelectedIndex == 1
             ? "Cuenta de cargo (cuenta de CEFER donde se cobra el recibo)"
             : "IBAN del proveedor";
+        var tarjeta = CmbFormaPago.SelectedIndex == 2;
+        PanelIbanFac.Visibility = tarjeta ? Visibility.Collapsed : Visibility.Visible;
+        PanelTarjetaFac.Visibility = tarjeta ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private bool Leer(TextBox tb, out decimal? valor)

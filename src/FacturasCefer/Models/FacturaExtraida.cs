@@ -18,8 +18,11 @@ public sealed class FacturaExtraida
     [JsonPropertyName("proveedor_telefono")] public string? ProveedorTelefono { get; set; }
     [JsonPropertyName("iban")] public string? Iban { get; set; }
 
-    /// <summary>"transferencia", "domiciliacion", "otra" o "" si no consta.</summary>
+    /// <summary>"transferencia", "domiciliacion", "tarjeta", "otra" o "" si no consta.</summary>
     [JsonPropertyName("forma_pago")] public string? FormaPago { get; set; }
+
+    /// <summary>Si se pagó con tarjeta: marca y últimos 4 dígitos (p. ej. "VISA 1234").</summary>
+    [JsonPropertyName("tarjeta")] public string? Tarjeta { get; set; }
 
     [JsonPropertyName("numero_factura")] public string? NumeroFactura { get; set; }
     [JsonPropertyName("fecha_factura")] public string? FechaFactura { get; set; }

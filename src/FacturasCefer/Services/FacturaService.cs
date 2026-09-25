@@ -116,10 +116,10 @@ public sealed class FacturaService
             cmd.Transaction = tx;
             cmd.CommandText = @"INSERT INTO dbo.FacturaProveedores
                 (IdProveedor, NumeroFactura, Concepto, FechaFactura, FechaVencimiento, BaseImponible, PorcIVA, CuotaIVA,
-                 PorcIRPF, CuotaIRPF, Total, IBAN, FormaPago, Estado, RutaPdf, RutaPdfOriginal, PaginaInicio, PaginaFin,
+                 PorcIRPF, CuotaIRPF, Total, IBAN, FormaPago, Tarjeta, Estado, FechaPago, RutaPdf, RutaPdfOriginal, PaginaInicio, PaginaFin,
                  NombreOriginal, JsonExtraccionIA, Observaciones, IdUsuarioRegistro)
                 OUTPUT INSERTED.Id
-                VALUES (@prov, @num, @conc, @fec, @vto, @base, @piva, @civa, @pirpf, @cirpf, @total, @iban, @fpago, @estado,
+                VALUES (@prov, @num, @conc, @fec, @vto, @base, @piva, @civa, @pirpf, @cirpf, @total, @iban, @fpago, @tarj, @estado, @fpag,
                         @ruta, @rutaOrig, @pini, @pfin, @nomOrig, @json, @obs, @usr)";
             cmd.Parameters.AddWithValue("@prov", f.IdProveedor);
             cmd.Parameters.AddWithValue("@num", f.NumeroFactura.Trim());
@@ -134,7 +134,10 @@ public sealed class FacturaService
             cmd.Parameters.AddWithValue("@total", f.Total);
             cmd.Parameters.AddWithValue("@iban", SqlUtil.DbVal(Validaciones.NormalizarIban(f.IBAN)));
             cmd.Parameters.AddWithValue("@fpago", (byte)f.FormaPago);
+            cmd.Parameters.AddWithValue("@tarj", SqlUtil.DbVal(Validaciones.EnmascararTarjeta(f.Tarjeta)));
             cmd.Parameters.AddWithValue("@estado", (byte)f.Estado);
+            cmd.Parameters.Add("@fpag", System.Data.SqlDbType.Date).Value =
+                f.Estado == EstadoFactura.Pagada ? (object?)f.FechaPago?.Date ?? f.FechaFactura.Date : DBNull.Value;
             cmd.Parameters.AddWithValue("@ruta", f.RutaPdf);
             cmd.Parameters.AddWithValue("@rutaOrig", SqlUtil.DbVal(f.RutaPdfOriginal));
             cmd.Parameters.AddWithValue("@pini", (object?)f.PaginaInicio ?? DBNull.Value);
@@ -157,7 +160,11 @@ public sealed class FacturaService
         {
             hist.Transaction = tx;
             hist.CommandText = @"INSERT INTO dbo.FacturaEstadoHistorico (IdFactura, EstadoAnterior, EstadoNuevo, IdUsuario, Comentario)
-                                 VALUES (@id, NULL, @estado, @usr, N'Alta de la factura')";
+                                 VALUES (@id, NULL, @estado, @usr, @com)";
+            var tarjeta = Validaciones.EnmascararTarjeta(f.Tarjeta);
+            hist.Parameters.AddWithValue("@com", f.Estado == EstadoFactura.Pagada
+                ? $"Alta: pagada con tarjeta{(tarjeta.Length > 0 ? " " + tarjeta : "")} el {f.FechaPago ?? f.FechaFactura:dd/MM/yyyy}"
+                : "Alta de la factura");
             hist.Parameters.AddWithValue("@id", id);
             hist.Parameters.AddWithValue("@estado", (byte)f.Estado);
             hist.Parameters.AddWithValue("@usr", idUsuario);
@@ -173,7 +180,7 @@ public sealed class FacturaService
     private const string SelectListado = @"
         SELECT f.Id, f.IdProveedor, p.RazonSocial, p.CIF, p.IBAN AS IbanProveedor, f.NumeroFactura, f.Concepto,
                f.FechaFactura, f.FechaVencimiento, f.BaseImponible, f.PorcIVA, f.CuotaIVA, f.PorcIRPF, f.CuotaIRPF,
-               f.Total, f.IBAN, f.FormaPago, f.Estado, f.FechaPago, f.MotivoRechazo, f.RutaPdf, f.RutaPdfOriginal,
+               f.Total, f.IBAN, f.FormaPago, f.Tarjeta, f.Estado, f.FechaPago, f.MotivoRechazo, f.RutaPdf, f.RutaPdfOriginal,
                f.Observaciones, f.FechaRegistro
         FROM dbo.FacturaProveedores f
         JOIN dbo.Proveedor p ON p.Id = f.IdProveedor";
@@ -252,6 +259,22 @@ public sealed class FacturaService
         return lista;
     }
 
+    /// <summary>Tarjetas ya usadas (facturas y habituales de proveedores), para sugerirlas.</summary>
+    public async Task<List<string>> TarjetasUsadasAsync(CancellationToken ct = default)
+    {
+        await using var cn = Conexion();
+        await cn.OpenAsync(ct);
+        await using var cmd = cn.CreateCommand();
+        cmd.CommandText = @"SELECT Tarjeta FROM dbo.FacturaProveedores WHERE Tarjeta IS NOT NULL
+                            UNION
+                            SELECT Tarjeta FROM dbo.Proveedor WHERE Tarjeta IS NOT NULL
+                            ORDER BY Tarjeta";
+        var lista = new List<string>();
+        await using var rd = await cmd.ExecuteReaderAsync(ct);
+        while (await rd.ReadAsync(ct)) lista.Add(rd.GetString(0));
+        return lista;
+    }
+
     // ------------------------------------------------------------------ Edición
 
     /// <summary>Guarda los datos editables de la factura. Solo se permite en estado Recibida o Validada.</summary>
@@ -263,7 +286,7 @@ public sealed class FacturaService
         cmd.CommandText = @"UPDATE dbo.FacturaProveedores
                             SET NumeroFactura = @num, Concepto = @conc, FechaFactura = @fec, FechaVencimiento = @vto,
                                 BaseImponible = @base, PorcIVA = @piva, CuotaIVA = @civa, PorcIRPF = @pirpf,
-                                CuotaIRPF = @cirpf, Total = @total, IBAN = @iban, FormaPago = @fpago, Observaciones = @obs
+                                CuotaIRPF = @cirpf, Total = @total, IBAN = @iban, FormaPago = @fpago, Tarjeta = @tarj, Observaciones = @obs
                             WHERE Id = @id AND Estado IN (1, 2)";
         cmd.Parameters.AddWithValue("@id", f.Id);
         cmd.Parameters.AddWithValue("@num", f.NumeroFactura.Trim());
@@ -278,6 +301,7 @@ public sealed class FacturaService
         cmd.Parameters.AddWithValue("@total", f.Total);
         cmd.Parameters.AddWithValue("@iban", SqlUtil.DbVal(Validaciones.NormalizarIban(f.IBAN)));
         cmd.Parameters.AddWithValue("@fpago", (byte)f.FormaPago);
+        cmd.Parameters.AddWithValue("@tarj", SqlUtil.DbVal(Validaciones.EnmascararTarjeta(f.Tarjeta)));
         cmd.Parameters.AddWithValue("@obs", SqlUtil.DbVal(f.Observaciones));
         try
         {
@@ -358,7 +382,14 @@ public sealed class FacturaService
                         ult.Parameters.AddWithValue("@id", id);
                         var r = await ult.ExecuteScalarAsync(ct);
                         var anterior = r is null or DBNull ? (EstadoFactura?)null : (EstadoFactura)(byte)r;
-                        if (anterior is null) motivo = "no hay ningún cambio de estado que deshacer.";
+                        if (anterior is null && actual == EstadoFactura.Pagada)
+                        {
+                            // Alta directa como pagada (tarjeta): vuelve a Recibida para corregirla.
+                            nuevo = EstadoFactura.Recibida;
+                            textoHist = "Deshacer alta como pagada (→ Recibida)"
+                                        + (string.IsNullOrWhiteSpace(comentario) ? "" : ". " + comentario.Trim());
+                        }
+                        else if (anterior is null) motivo = "no hay ningún cambio de estado que deshacer.";
                         else if (anterior is EstadoFactura.Pagada or EstadoFactura.Rechazada)
                             motivo = $"volvería a {Textos.Estado(anterior.Value)}; usa el botón correspondiente.";
                         else
@@ -437,6 +468,7 @@ public sealed class FacturaService
             Total = rd.GetDecimal(rd.GetOrdinal("Total")),
             IBAN = rd.Str("IBAN"),
             FormaPago = (FormaPago)rd.GetByte(rd.GetOrdinal("FormaPago")),
+            Tarjeta = rd.Str("Tarjeta"),
             Estado = (EstadoFactura)rd.GetByte(rd.GetOrdinal("Estado")),
             FechaPago = Fecha("FechaPago"),
             MotivoRechazo = rd.Str("MotivoRechazo"),

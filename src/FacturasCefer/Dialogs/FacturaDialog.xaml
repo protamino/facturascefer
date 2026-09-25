@@ -71,11 +71,18 @@
                                   SelectionChanged="CmbFormaPago_SelectionChanged">
                             <ComboBoxItem Content="Transferencia"/>
                             <ComboBoxItem Content="Domiciliación"/>
+                            <ComboBoxItem Content="Tarjeta"/>
                         </ComboBox>
                     </StackPanel>
                 </Grid>
-                <TextBlock x:Name="LblIban" Text="IBAN del proveedor" Style="{StaticResource Etiqueta}"/>
-                <TextBox x:Name="TxtIban" CharacterCasing="Upper" MaxLength="42" FontFamily="Consolas"/>
+                <StackPanel x:Name="PanelIbanFac">
+                    <TextBlock x:Name="LblIban" Text="IBAN del proveedor" Style="{StaticResource Etiqueta}"/>
+                    <TextBox x:Name="TxtIban" CharacterCasing="Upper" MaxLength="42" FontFamily="Consolas"/>
+                </StackPanel>
+                <StackPanel x:Name="PanelTarjetaFac" Visibility="Collapsed">
+                    <TextBlock Text="Tarjeta con la que se pagó" Style="{StaticResource Etiqueta}"/>
+                    <TextBox x:Name="TxtTarjeta" MaxLength="60"/>
+                </StackPanel>
                 <TextBlock Text="Concepto" Style="{StaticResource Etiqueta}"/>
                 <TextBox x:Name="TxtConcepto" MaxLength="500"/>
 

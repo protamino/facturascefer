@@ -259,6 +259,9 @@ public partial class SubirFacturasView : UserControl
         TxtCif.Text = ia.ProveedorCif ?? "";
         TxtIban.Text = Validaciones.FormatearIban(ia.Iban);
         FormaPagoActual = FormaPagoIa(ia) ?? FormaPago.Transferencia;
+        CmbTarjeta.Text = Validaciones.EnmascararTarjeta(ia.Tarjeta);
+        DpFechaPago.SelectedDate = ParseFecha(ia.FechaFactura);
+        _ = CargarTarjetasAsync();
         TxtNumero.Text = ia.NumeroFactura ?? "";
         DpFecha.SelectedDate = ParseFecha(ia.FechaFactura);
         DpVencimiento.SelectedDate = ParseFecha(ia.FechaVencimiento);
@@ -296,7 +299,13 @@ public partial class SubirFacturasView : UserControl
         var ia = fr.Ia;
         ia.ProveedorCif = TxtCif.Text.Trim();
         ia.Iban = Validaciones.NormalizarIban(TxtIban.Text);
-        ia.FormaPago = FormaPagoActual == FormaPago.Domiciliacion ? "domiciliacion" : "transferencia";
+        ia.FormaPago = FormaPagoActual switch
+        {
+            FormaPago.Domiciliacion => "domiciliacion",
+            FormaPago.Tarjeta => "tarjeta",
+            _ => "transferencia",
+        };
+        ia.Tarjeta = CmbTarjeta.Text;
         ia.NumeroFactura = TxtNumero.Text.Trim();
         ia.FechaFactura = DpFecha.SelectedDate?.ToString("yyyy-MM-dd") ?? "";
         ia.FechaVencimiento = DpVencimiento.SelectedDate?.ToString("yyyy-MM-dd") ?? "";
@@ -391,7 +400,11 @@ public partial class SubirFacturasView : UserControl
                 : $"Proveedor no registrado: {(string.IsNullOrWhiteSpace(razonIa) ? cif : $"{razonIa} ({cif})")}.";
             BtnAltaProveedor.Visibility = Visibility.Visible;
         }
-        if (p is not null) FormaPagoActual = p.FormaPago;
+        if (p is not null)
+        {
+            FormaPagoActual = p.FormaPago;
+            if (p.FormaPago == FormaPago.Tarjeta && string.IsNullOrWhiteSpace(CmbTarjeta.Text)) CmbTarjeta.Text = p.Tarjeta ?? "";
+        }
         ActualizarAvisoFormaPago();
         ActualizarPanelIban();
     }
@@ -412,6 +425,7 @@ public partial class SubirFacturasView : UserControl
             Poblacion = ia.ProveedorPoblacion,
             Provincia = ia.ProveedorProvincia,
             FormaPago = FormaPagoActual,
+            Tarjeta = FormaPagoActual == FormaPago.Tarjeta ? Validaciones.EnmascararTarjeta(CmbTarjeta.Text) : null,
             // En domiciliadas el IBAN de la factura es la cuenta de cargo de CEFER: no es del proveedor.
             IBAN = FormaPagoActual == FormaPago.Transferencia && Validaciones.IbanValido(iban) ? iban : null,
             Email = ia.ProveedorEmail,
@@ -430,25 +444,50 @@ public partial class SubirFacturasView : UserControl
 
     private FormaPago FormaPagoActual
     {
-        get => CmbFormaPago.SelectedIndex == 1 ? FormaPago.Domiciliacion : FormaPago.Transferencia;
-        set => CmbFormaPago.SelectedIndex = value == FormaPago.Domiciliacion ? 1 : 0;
+        get => CmbFormaPago.SelectedIndex >= 0 ? (FormaPago)(CmbFormaPago.SelectedIndex + 1) : FormaPago.Transferencia;
+        set => CmbFormaPago.SelectedIndex = (int)value - 1;
     }
 
     private static FormaPago? FormaPagoIa(FacturaExtraida ia) => ia.FormaPago switch
     {
         "domiciliacion" => FormaPago.Domiciliacion,
         "transferencia" => FormaPago.Transferencia,
+        "tarjeta" => FormaPago.Tarjeta,
         _ => null,
     };
 
     private void CmbFormaPago_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (LblIban is null) return; // durante InitializeComponent
+        if (LblIban is null || PanelTarjeta is null) return; // durante InitializeComponent
         LblIban.Text = FormaPagoActual == FormaPago.Domiciliacion
             ? "Cuenta de cargo (cuenta de CEFER donde se cobra el recibo)"
             : "IBAN del proveedor";
+        var tarjeta = FormaPagoActual == FormaPago.Tarjeta;
+        PanelIbanRev.Visibility = tarjeta ? Visibility.Collapsed : Visibility.Visible;
+        PanelTarjeta.Visibility = tarjeta ? Visibility.Visible : Visibility.Collapsed;
+        BtnGuardar.Content = tarjeta ? "Guardar como pagada" : "Guardar factura";
         ActualizarAvisoFormaPago();
         ActualizarPanelIban();
+    }
+
+    private bool _tarjetasCargadas;
+
+    /// <summary>Sugerencias para el campo Tarjeta: las ya usadas en facturas y proveedores.</summary>
+    private async Task CargarTarjetasAsync()
+    {
+        if (_tarjetasCargadas) return;
+        _tarjetasCargadas = true;
+        try
+        {
+            var texto = CmbTarjeta.Text;
+            CmbTarjeta.ItemsSource = await App.Facturas.TarjetasUsadasAsync();
+            CmbTarjeta.Text = texto;
+        }
+        catch (Exception ex)
+        {
+            _tarjetasCargadas = false;
+            App.Log("app-error.log", ex);
+        }
     }
 
     /// <summary>Avisa si la forma de pago que indica la factura no es la que tiene el proveedor.</summary>
@@ -473,7 +512,7 @@ public partial class SubirFacturasView : UserControl
         var ibanProveedor = Validaciones.NormalizarIban(_proveedor?.IBAN);
 
         if (_proveedor is null || ibanFactura.Length == 0 || ibanFactura == ibanProveedor ||
-            FormaPagoActual == FormaPago.Domiciliacion)
+            FormaPagoActual != FormaPago.Transferencia)
         {
             PanelIban.Visibility = Visibility.Collapsed;
             ChkActualizarIban.IsChecked = false;
@@ -630,6 +669,8 @@ public partial class SubirFacturasView : UserControl
         if (!Formato.TryImporte(TxtCuotaIrpf.Text, out var cuotaIrpf)) { Error("La retención IRPF no es un importe válido.", TxtCuotaIrpf); return; }
         if (!Formato.TryImporte(TxtTotal.Text, out var total) || total is null) { Error("El total es obligatorio y debe ser un importe válido.", TxtTotal); return; }
         if (!LeerPaginas(out var desde, out var hasta)) { Error($"Rango de páginas no válido (1 a {pdf.Paginas}).", TxtPagDesde); return; }
+        var formaPago = FormaPagoActual;
+        if (formaPago == FormaPago.Tarjeta && DpFechaPago.SelectedDate is null) { Error("Indica la fecha de pago con tarjeta.", DpFechaPago); return; }
 
         // --- Avisos que se pueden confirmar
         var iban = Validaciones.NormalizarIban(TxtIban.Text);
@@ -670,8 +711,11 @@ public partial class SubirFacturasView : UserControl
             PorcIRPF = porcIrpf,
             CuotaIRPF = cuotaIrpf,
             Total = total.Value,
-            IBAN = iban.Length > 0 ? iban : null,
-            FormaPago = FormaPagoActual,
+            IBAN = formaPago != FormaPago.Tarjeta && iban.Length > 0 ? iban : null,
+            FormaPago = formaPago,
+            Tarjeta = formaPago == FormaPago.Tarjeta ? Validaciones.EnmascararTarjeta(CmbTarjeta.Text) : null,
+            Estado = formaPago == FormaPago.Tarjeta ? EstadoFactura.Pagada : EstadoFactura.Recibida,
+            FechaPago = formaPago == FormaPago.Tarjeta ? DpFechaPago.SelectedDate : null,
             NombreOriginal = pdf.NombreOriginal,
             JsonExtraccionIA = fr.JsonIa,
             Observaciones = TxtObservaciones.Text,

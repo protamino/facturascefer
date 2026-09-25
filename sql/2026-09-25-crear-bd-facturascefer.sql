@@ -24,7 +24,8 @@ CREATE TABLE dbo.Proveedor (
     Pais           nvarchar(60)      NOT NULL CONSTRAINT DF_Proveedor_Pais DEFAULT (N'España'),
     IBAN           varchar(34)       NULL,
     FormaPago      tinyint           NOT NULL CONSTRAINT DF_Proveedor_FormaPago DEFAULT (1)
-                   CONSTRAINT CK_Proveedor_FormaPago CHECK (FormaPago IN (1, 2)), -- 1 Transferencia, 2 Domiciliación
+                   CONSTRAINT CK_Proveedor_FormaPago CHECK (FormaPago IN (1, 2, 3)), -- 1 Transferencia, 2 Domiciliación, 3 Tarjeta
+    Tarjeta        nvarchar(60)      NULL,  -- tarjeta habitual: marca + últimos 4 dígitos
     Email          nvarchar(150)     NULL,
     Telefono       varchar(30)       NULL,
     Observaciones  nvarchar(max)     NULL,
@@ -52,7 +53,8 @@ CREATE TABLE dbo.FacturaProveedores (
     Total              decimal(12,2)     NOT NULL,
     IBAN               varchar(34)       NULL,  -- transferencia: cuenta del proveedor; domiciliación: cuenta de cargo de CEFER
     FormaPago          tinyint           NOT NULL CONSTRAINT DF_Factura_FormaPago DEFAULT (1)
-                       CONSTRAINT CK_Factura_FormaPago CHECK (FormaPago IN (1, 2)),
+                       CONSTRAINT CK_Factura_FormaPago CHECK (FormaPago IN (1, 2, 3)),
+    Tarjeta            nvarchar(60)      NULL,  -- pagada con tarjeta: marca + últimos 4 dígitos
     Estado             tinyint           NOT NULL CONSTRAINT DF_Factura_Estado DEFAULT (1)
                        CONSTRAINT CK_Factura_Estado CHECK (Estado IN (1,2,3,4)), -- 1 Recibida, 2 Validada, 3 Pagada, 4 Rechazada/Anulada
     FechaPago          date              NULL,

@@ -119,7 +119,10 @@ public sealed class ExtraccionService
         - Si hay varios tipos de IVA, suma las bases y las cuotas; en porc_iva pon el tipo principal.
         - forma_pago: "domiciliacion" si la factura se cobra por recibo/adeudo domiciliado en la cuenta del cliente
           (p. ej. "recibo domiciliado", "domiciliación bancaria", "adeudo SEPA", "giro"); "transferencia" si CEFER debe
-          transferir a una cuenta del proveedor; "otra" si indica otro medio (tarjeta, contado…); "" si no consta.
+          transferir a una cuenta del proveedor; "tarjeta" si ya se ha pagado con tarjeta (VISA, Mastercard, "pagado con
+          tarjeta", ticket de datáfono…); "otra" si indica otro medio (contado, PayPal…); "" si no consta.
+        - tarjeta: solo si forma_pago es "tarjeta": marca y ÚLTIMOS 4 dígitos si aparecen (p. ej. "VISA 1234").
+          NUNCA el número completo. "" si no aparece o no es pago con tarjeta.
         - iban: la cuenta bancaria que aparece para el pago, sin espacios. Si es domiciliación, es la cuenta de CEFER
           donde se carga el recibo (no la del proveedor); si es transferencia, la del proveedor. CIF sin espacios ni guiones.
         - concepto: resumen breve (máx. 200 caracteres) de lo facturado, tal como aparece en las líneas.
@@ -131,7 +134,7 @@ public sealed class ExtraccionService
     private static readonly string[] CamposTexto =
     {
         "proveedor_razon_social", "proveedor_cif", "proveedor_direccion", "proveedor_cp", "proveedor_poblacion",
-        "proveedor_provincia", "proveedor_email", "proveedor_telefono", "iban",
+        "proveedor_provincia", "proveedor_email", "proveedor_telefono", "iban", "tarjeta",
         "numero_factura", "fecha_factura", "fecha_vencimiento", "concepto",
     };
 
@@ -152,7 +155,7 @@ public sealed class ExtraccionService
         };
         // Texto: "" si no aparece (la API limita a 16 los campos con unión/nullable). Importes: null.
         foreach (var c in CamposTexto) props[c] = new { type = "string" };
-        props["forma_pago"] = new { type = "string", @enum = new[] { "transferencia", "domiciliacion", "otra", "" } };
+        props["forma_pago"] = new { type = "string", @enum = new[] { "transferencia", "domiciliacion", "tarjeta", "otra", "" } };
         foreach (var c in CamposNumero) props[c] = anyNull("number");
         props["campos_dudosos"] = new
         {

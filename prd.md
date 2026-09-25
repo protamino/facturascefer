@@ -1,6 +1,6 @@
 # FACTURASCEFER — PRD
 
-*Versión 0.5 · 2026-09-25 · Autor: Fernando Marina*
+*Versión 0.6 · 2026-09-25 · Autor: Fernando Marina*
 
 ## 1. Objetivo
 
@@ -53,7 +53,8 @@ Claude devuelve un JSON con una **lista de facturas** encontradas en el PDF. Por
 | Razón social del proveedor | |
 | CIF/NIF del proveedor | Clave principal para identificar al proveedor. No confundir con el CIF de CEFER (`CifPropio` en config, se indica a Claude) |
 | Dirección del proveedor | Para prellenar el alta |
-| Forma de pago | Transferencia / domiciliación / otra |
+| Forma de pago | Transferencia / domiciliación / tarjeta / otra |
+| Tarjeta | Si se pagó con tarjeta: marca y últimos 4 dígitos (nunca el número completo) |
 | IBAN | Normalizado sin espacios. En domiciliadas es la **cuenta de cargo de CEFER**, no la del proveedor |
 | Nº de factura | |
 | Fecha de factura | |
@@ -82,6 +83,7 @@ Claude devuelve un JSON con una **lista de facturas** encontradas en el PDF. Por
 - En la revisión se toma la del proveedor (o la que detecta la IA si es nuevo); si la factura indica otra, se avisa.
 - En domiciliadas el IBAN de la factura se guarda como **cuenta de cargo** y **no** se compara con el del proveedor (no hay alerta antifraude) ni se copia a su ficha al darlo de alta.
 - Las domiciliadas siguen el mismo flujo de estados: se marcan Pagadas a mano al comprobar el cargo (filtro por forma de pago en el listado).
+- **Tarjeta**: la factura ya está cobrada. Se indica la tarjeta (marca + últimos 4 dígitos; sugerencias: la habitual del proveedor y las ya usadas) y la fecha de pago (por defecto la de la factura), y se registra **directamente como Pagada**. «Deshacer» la devuelve a Recibida por si se registró por error. 🔒 Nunca se guarda un número de tarjeta completo: la app lo recorta a los últimos 4 dígitos.
 
 ### 4.5 Emparejado de proveedor
 
@@ -152,7 +154,8 @@ Recibida ──► Validada ──► Pagada
 | Provincia | nvarchar(100) | |
 | Pais | nvarchar(60) | por defecto "España" |
 | IBAN | varchar(34) | |
-| FormaPago | tinyint | 1 Transferencia, 2 Domiciliación |
+| FormaPago | tinyint | 1 Transferencia, 2 Domiciliación, 3 Tarjeta |
+| Tarjeta | nvarchar(60) NULL | tarjeta habitual (marca + últimos 4) |
 | Email | nvarchar(150) | |
 | Telefono | varchar(30) | |
 | Observaciones | nvarchar(max) | |
@@ -176,7 +179,8 @@ Recibida ──► Validada ──► Pagada
 | CuotaIRPF | decimal(12,2) NULL | |
 | Total | decimal(12,2) | |
 | IBAN | varchar(34) | el de la factura (transferencia: del proveedor; domiciliación: cuenta de cargo de CEFER) |
-| FormaPago | tinyint | 1 Transferencia, 2 Domiciliación |
+| FormaPago | tinyint | 1 Transferencia, 2 Domiciliación, 3 Tarjeta |
+| Tarjeta | nvarchar(60) NULL | tarjeta con la que se pagó (marca + últimos 4) |
 | Estado | tinyint | 1 Recibida, 2 Validada, 3 Pagada, 4 Rechazada/Anulada |
 | FechaPago | date NULL | |
 | MotivoRechazo | nvarchar(500) NULL | |

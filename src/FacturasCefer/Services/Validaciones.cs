@@ -42,6 +42,29 @@ public static class Validaciones
         return sb.ToString();
     }
 
+    private static readonly System.Text.RegularExpressions.Regex NumeroTarjeta =
+        new(@"(?:\d[ \-]?){12,19}", System.Text.RegularExpressions.RegexOptions.Compiled);
+    private static readonly System.Text.RegularExpressions.Regex Mascara =
+        new(@"[\*xX•·]{2,}[ \-]*", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    /// <summary>
+    /// Deja la tarjeta como "marca ···· 1234". Nunca conserva un número completo: si aparece uno
+    /// (12-19 dígitos), se sustituye por sus últimos 4. Máx. 60 caracteres.
+    /// </summary>
+    public static string EnmascararTarjeta(string? tarjeta)
+    {
+        if (string.IsNullOrWhiteSpace(tarjeta)) return "";
+        var s = NumeroTarjeta.Replace(tarjeta, m =>
+        {
+            var digitos = new string(m.Value.Where(char.IsDigit).ToArray());
+            return "···· " + digitos[^4..] + (m.Value.EndsWith(" ") || m.Value.EndsWith("-") ? " " : "");
+        });
+        s = Mascara.Replace(s, "···· ");
+        s = System.Text.RegularExpressions.Regex.Replace(s, @"(···· *){2,}", "···· ");
+        s = System.Text.RegularExpressions.Regex.Replace(s, @"\s+", " ").Trim();
+        return s.Length > 60 ? s[..60] : s;
+    }
+
     /// <summary>True si es un NIF, NIE o CIF español con dígito de control correcto.</summary>
     public static bool CifValido(string? valor)
     {

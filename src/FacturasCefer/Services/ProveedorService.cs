@@ -14,7 +14,7 @@ public sealed class ProveedorService
     private SqlConnection Conexion() => new(_cfg.Facturas.ConnectionString);
 
     private const string Columnas =
-        "Id, RazonSocial, CIF, Direccion, CP, Poblacion, Provincia, Pais, IBAN, FormaPago, Email, Telefono, Observaciones, Baja, FechaAlta";
+        "Id, RazonSocial, CIF, Direccion, CP, Poblacion, Provincia, Pais, IBAN, FormaPago, Tarjeta, Email, Telefono, Observaciones, Baja, FechaAlta";
 
     public async Task<List<Proveedor>> BuscarAsync(string? texto, bool incluirBajas, CancellationToken ct = default)
     {
@@ -52,9 +52,9 @@ public sealed class ProveedorService
         await cn.OpenAsync(ct);
         await using var cmd = cn.CreateCommand();
         cmd.CommandText = @"INSERT INTO dbo.Proveedor
-                                (RazonSocial, CIF, Direccion, CP, Poblacion, Provincia, Pais, IBAN, FormaPago, Email, Telefono, Observaciones, IdUsuarioAlta)
+                                (RazonSocial, CIF, Direccion, CP, Poblacion, Provincia, Pais, IBAN, FormaPago, Tarjeta, Email, Telefono, Observaciones, IdUsuarioAlta)
                             OUTPUT INSERTED.Id
-                            VALUES (@rs, @cif, @dir, @cp, @pob, @prov, @pais, @iban, @fpago, @email, @tel, @obs, @usr)";
+                            VALUES (@rs, @cif, @dir, @cp, @pob, @prov, @pais, @iban, @fpago, @tarj, @email, @tel, @obs, @usr)";
         AddParams(cmd, p);
         cmd.Parameters.AddWithValue("@usr", idUsuario);
         try
@@ -92,7 +92,7 @@ public sealed class ProveedorService
             upd.Transaction = tx;
             upd.CommandText = @"UPDATE dbo.Proveedor
                                 SET RazonSocial = @rs, CIF = @cif, Direccion = @dir, CP = @cp, Poblacion = @pob,
-                                    Provincia = @prov, Pais = @pais, IBAN = @iban, FormaPago = @fpago, Email = @email, Telefono = @tel,
+                                    Provincia = @prov, Pais = @pais, IBAN = @iban, FormaPago = @fpago, Tarjeta = @tarj, Email = @email, Telefono = @tel,
                                     Observaciones = @obs
                                 WHERE Id = @id";
             AddParams(upd, p);
@@ -168,6 +168,7 @@ public sealed class ProveedorService
         cmd.Parameters.AddWithValue("@pais", string.IsNullOrWhiteSpace(p.Pais) ? "España" : p.Pais.Trim());
         cmd.Parameters.AddWithValue("@iban", SqlUtil.DbVal(Validaciones.NormalizarIban(p.IBAN)));
         cmd.Parameters.AddWithValue("@fpago", (byte)p.FormaPago);
+        cmd.Parameters.AddWithValue("@tarj", SqlUtil.DbVal(Validaciones.EnmascararTarjeta(p.Tarjeta)));
         cmd.Parameters.AddWithValue("@email", SqlUtil.DbVal(p.Email));
         cmd.Parameters.AddWithValue("@tel", SqlUtil.DbVal(p.Telefono));
         cmd.Parameters.AddWithValue("@obs", SqlUtil.DbVal(p.Observaciones));
@@ -185,6 +186,7 @@ public sealed class ProveedorService
         Pais = rd.Str("Pais") ?? "España",
         IBAN = rd.Str("IBAN"),
         FormaPago = (FormaPago)rd.GetByte(rd.GetOrdinal("FormaPago")),
+        Tarjeta = rd.Str("Tarjeta"),
         Email = rd.Str("Email"),
         Telefono = rd.Str("Telefono"),
         Observaciones = rd.Str("Observaciones"),

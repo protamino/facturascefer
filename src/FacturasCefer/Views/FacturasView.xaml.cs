@@ -89,7 +89,7 @@ public partial class FacturasView : UserControl
         var f = new FiltroFacturas
         {
             IdProveedor = (CmbProveedor.SelectedItem as OpcionProveedor)?.Id,
-            FormaPago = CmbFormaPago.SelectedIndex switch { 1 => FormaPago.Transferencia, 2 => FormaPago.Domiciliacion, _ => null },
+            FormaPago = CmbFormaPago.SelectedIndex > 0 ? (FormaPago)CmbFormaPago.SelectedIndex : null,
             Texto = TxtBuscar.Text,
             PorVencimiento = CmbCampoFecha.SelectedIndex == 1,
             Desde = DpDesde.SelectedDate,

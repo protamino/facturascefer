@@ -22,6 +22,7 @@ public sealed class FacturaListado
     public decimal Total { get; set; }
     public string? IBAN { get; set; }
     public FormaPago FormaPago { get; set; }
+    public string? Tarjeta { get; set; }
     public EstadoFactura Estado { get; set; }
     public DateTime? FechaPago { get; set; }
     public string? MotivoRechazo { get; set; }
@@ -31,7 +32,12 @@ public sealed class FacturaListado
     public DateTime FechaRegistro { get; set; }
 
     public string EstadoTexto => Textos.Estado(Estado);
-    public string FormaPagoCorta => FormaPago == FormaPago.Domiciliacion ? "Domic." : "Transf.";
+    public string FormaPagoCorta => FormaPago switch
+    {
+        FormaPago.Domiciliacion => "Domic.",
+        FormaPago.Tarjeta => "Tarjeta",
+        _ => "Transf.",
+    };
 
     /// <summary>Pendiente de pago con el vencimiento ya pasado.</summary>
     public bool Vencida => Estado is EstadoFactura.Recibida or EstadoFactura.Validada
@@ -82,5 +88,10 @@ public static class Textos
         _ => e.ToString(),
     };
 
-    public static string FormaPago(FormaPago f) => f == Models.FormaPago.Domiciliacion ? "Domiciliación" : "Transferencia";
+    public static string FormaPago(FormaPago f) => f switch
+    {
+        Models.FormaPago.Domiciliacion => "Domiciliación",
+        Models.FormaPago.Tarjeta => "Tarjeta",
+        _ => "Transferencia",
+    };
 }

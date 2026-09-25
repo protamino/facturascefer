@@ -37,6 +37,7 @@
                           VerticalContentAlignment="Center">
                     <ComboBoxItem Content="Transferencia (CEFER paga al IBAN del proveedor)"/>
                     <ComboBoxItem Content="Domiciliación (el proveedor gira recibo a CEFER)"/>
+                    <ComboBoxItem Content="Tarjeta (se paga con tarjeta al comprar)"/>
                 </ComboBox>
             </StackPanel>
 
@@ -44,9 +45,13 @@
                 <TextBlock Text="Dirección" Style="{StaticResource Etiqueta}"/>
                 <TextBox x:Name="TxtDireccion" MaxLength="250"/>
             </StackPanel>
-            <StackPanel Grid.Row="2" Grid.Column="2">
+            <StackPanel x:Name="PanelIbanProv" Grid.Row="2" Grid.Column="2">
                 <TextBlock x:Name="LblIban" Text="IBAN del proveedor" Style="{StaticResource Etiqueta}"/>
                 <TextBox x:Name="TxtIban" MaxLength="42" CharacterCasing="Upper" FontFamily="Consolas"/>
+            </StackPanel>
+            <StackPanel x:Name="PanelTarjetaProv" Grid.Row="2" Grid.Column="2" Visibility="Collapsed">
+                <TextBlock Text="Tarjeta habitual (marca y últimos 4 dígitos)" Style="{StaticResource Etiqueta}"/>
+                <TextBox x:Name="TxtTarjeta" MaxLength="60" ToolTip="Ej.: VISA 1234. Nunca el número completo."/>
             </StackPanel>
 
             <Grid Grid.Row="3" Grid.ColumnSpan="3">

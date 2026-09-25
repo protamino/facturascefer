@@ -12,11 +12,13 @@ public enum EstadoFactura : byte
 /// <summary>
 /// Forma de pago (Proveedor.FormaPago y FacturaProveedores.FormaPago).
 /// Con domiciliación el IBAN de la factura es la cuenta de cargo de CEFER, no la del proveedor.
+/// Con tarjeta la factura ya está cobrada: se registra directamente como Pagada.
 /// </summary>
 public enum FormaPago : byte
 {
     Transferencia = 1,
     Domiciliacion = 2,
+    Tarjeta = 3,
 }
 
 /// <summary>Factura de proveedor (dbo.FacturaProveedores).</summary>
@@ -36,7 +38,12 @@ public sealed class FacturaProveedor
     public decimal Total { get; set; }
     public string? IBAN { get; set; }
     public FormaPago FormaPago { get; set; } = FormaPago.Transferencia;
+
+    /// <summary>Tarjeta con la que se pagó (marca + últimos 4 dígitos).</summary>
+    public string? Tarjeta { get; set; }
+
     public EstadoFactura Estado { get; set; } = EstadoFactura.Recibida;
+    public DateTime? FechaPago { get; set; }
     public string RutaPdf { get; set; } = "";
     public string? RutaPdfOriginal { get; set; }
     public short? PaginaInicio { get; set; }

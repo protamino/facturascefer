@@ -127,19 +127,40 @@
                                   SelectionChanged="CmbFormaPago_SelectionChanged">
                             <ComboBoxItem Content="Transferencia"/>
                             <ComboBoxItem Content="Domiciliación (recibo a la cuenta de CEFER)"/>
+                            <ComboBoxItem Content="Tarjeta (ya pagada)"/>
                         </ComboBox>
                         <TextBlock x:Name="TxtAvisoFormaPago" Visibility="Collapsed" TextWrapping="Wrap" Margin="0,4,0,0"
                                    Foreground="#8A5300"/>
 
-                        <TextBlock x:Name="LblIban" Text="IBAN del proveedor" Style="{StaticResource Etiqueta}"/>
-                        <TextBox x:Name="TxtIban" CharacterCasing="Upper" MaxLength="42" FontFamily="Consolas"
-                                 TextChanged="TxtIban_TextChanged"/>
-                        <Border x:Name="PanelIban" Visibility="Collapsed" Padding="8,6" Margin="0,6,0,0" CornerRadius="3">
-                            <StackPanel>
-                                <TextBlock x:Name="TxtIbanAviso" TextWrapping="Wrap"/>
-                                <CheckBox x:Name="ChkActualizarIban" Margin="0,6,0,0"/>
+                        <StackPanel x:Name="PanelIbanRev">
+                            <TextBlock x:Name="LblIban" Text="IBAN del proveedor" Style="{StaticResource Etiqueta}"/>
+                            <TextBox x:Name="TxtIban" CharacterCasing="Upper" MaxLength="42" FontFamily="Consolas"
+                                     TextChanged="TxtIban_TextChanged"/>
+                            <Border x:Name="PanelIban" Visibility="Collapsed" Padding="8,6" Margin="0,6,0,0" CornerRadius="3">
+                                <StackPanel>
+                                    <TextBlock x:Name="TxtIbanAviso" TextWrapping="Wrap"/>
+                                    <CheckBox x:Name="ChkActualizarIban" Margin="0,6,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- Pago con tarjeta: se registra ya pagada -->
+                        <Grid x:Name="PanelTarjeta" Visibility="Collapsed">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="130"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Tarjeta (marca y últimos 4 dígitos)" Style="{StaticResource Etiqueta}"/>
+                                <ComboBox x:Name="CmbTarjeta" IsEditable="True" Height="26" VerticalContentAlignment="Center"
+                                          ToolTip="Ej.: VISA ···· 1234. Nunca se guarda el número completo."/>
                             </StackPanel>
-                        </Border>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Fecha de pago *" Style="{StaticResource Etiqueta}"/>
+                                <DatePicker x:Name="DpFechaPago"/>
+                            </StackPanel>
+                        </Grid>
 
                         <!-- Factura -->
                         <TextBlock Text="Factura" Style="{StaticResource Seccion}"/>

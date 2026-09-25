@@ -47,6 +47,7 @@
                 <ComboBoxItem Content="(Todas)"/>
                 <ComboBoxItem Content="Transferencia"/>
                 <ComboBoxItem Content="Domiciliación"/>
+                <ComboBoxItem Content="Tarjeta"/>
             </ComboBox>
 
             <ComboBox x:Name="CmbCampoFecha" Width="120" Margin="14,0,6,0" SelectedIndex="0"
