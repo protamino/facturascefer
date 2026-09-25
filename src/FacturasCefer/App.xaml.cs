@@ -1,5 +1,7 @@
+using System.Globalization;
 using System.IO;
 using System.Windows;
+using System.Windows.Markup;
 using System.Windows.Threading;
 using FacturasCefer.Config;
 using FacturasCefer.Models;
@@ -12,6 +14,8 @@ public partial class App : Application
     public static AppConfig Config { get; private set; } = null!;
     public static AuthService Auth { get; private set; } = null!;
     public static ProveedorService Proveedores { get; private set; } = null!;
+    public static FacturaService Facturas { get; private set; } = null!;
+    public static ExtraccionService Extraccion { get; private set; } = null!;
     public static Usuario Usuario { get; private set; } = null!;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -19,6 +23,15 @@ public partial class App : Application
         base.OnStartup(e);
 
         DispatcherUnhandledException += OnUnhandledException;
+
+        // Fechas e importes en formato español (DatePicker, bindings con StringFormat…).
+        var es = new CultureInfo("es-ES");
+        CultureInfo.DefaultThreadCurrentCulture = es;
+        CultureInfo.DefaultThreadCurrentUICulture = es;
+        Thread.CurrentThread.CurrentCulture = es;
+        Thread.CurrentThread.CurrentUICulture = es;
+        FrameworkElement.LanguageProperty.OverrideMetadata(typeof(FrameworkElement),
+            new FrameworkPropertyMetadata(XmlLanguage.GetLanguage(es.IetfLanguageTag)));
 
         // Evitar que la app se cierre al cerrarse el diálogo de login antes de abrir la principal.
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
@@ -36,6 +49,8 @@ public partial class App : Application
 
         Auth = new AuthService(Config);
         Proveedores = new ProveedorService(Config);
+        Facturas = new FacturaService(Config);
+        Extraccion = new ExtraccionService(Config);
 
         var login = new LoginWindow();
         if (login.ShowDialog() == true && login.UsuarioAutenticado is not null)

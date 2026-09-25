@@ -1,6 +1,6 @@
 # FACTURASCEFER — PRD
 
-*Versión 0.3 · 2026-09-25 · Autor: Fernando Marina*
+*Versión 0.4 · 2026-09-25 · Autor: Fernando Marina*
 
 ## 1. Objetivo
 
@@ -61,6 +61,7 @@ Claude devuelve un JSON con una **lista de facturas** encontradas en el PDF. Por
 | % IVA y cuota IVA | Si hay varios tipos, se suman (v1) |
 | % IRPF y cuota IRPF | Opcional |
 | Total | |
+| Concepto | Resumen breve de lo facturado (p. ej. "Servicios GMA. Paciente …") |
 
 - Cada campo lleva indicador de **no encontrado / baja confianza**, que se resalta en la revisión.
 - Se guarda el JSON bruto de la respuesta en la factura (trazabilidad).
@@ -157,6 +158,7 @@ Recibida ──► Validada ──► Pagada
 | Id | int IDENTITY PK | |
 | IdProveedor | int FK → Proveedor | |
 | NumeroFactura | nvarchar(50) | único con IdProveedor |
+| Concepto | nvarchar(500) NULL | extraído por la IA |
 | FechaFactura | date | |
 | FechaVencimiento | date NULL | |
 | BaseImponible | decimal(12,2) | |
@@ -204,16 +206,16 @@ Script de creación en `sql/2026-09-25-crear-bd-facturascefer.sql`. El login `pr
   },
   "RutaFacturas": "\\\\192.168.0.10\\Cefer\\FacturasProveedores",
   "CifPropio": "B00000000",
-  "Claude": { "ApiKey": "sk-ant-***", "Model": "claude-sonnet-5" }
+  "Claude": { "ApiKey": "sk-ant-***", "Model": "claude-opus-5" }
 }
 ```
 
 ## 10. Privacidad y seguridad
 
-- Las facturas de proveedores no contienen datos clínicos; envío a Claude API aceptable. Revisar política de retención de Anthropic.
+- ⚠️ **Las facturas pueden contener datos de salud**: nombre de pacientes y servicio prestado (p. ej. facturas de clínicas colaboradoras). Enviarlas a la API de Claude es un tratamiento de datos por un encargado: **validar con el DPO** y valorar solicitar a Anthropic retención cero (ZDR).
+- Carpeta `FacturasProveedores` con permisos restringidos a administración.
 - API key y contraseñas solo en `appsettings.json` (fuera del repo).
 - La alerta de cambio de IBAN es la principal medida antifraude.
-- Los PDFs en la ruta de red, con permisos solo para administración.
 
 ## 11. Despliegue y requisitos del PC
 

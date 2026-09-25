@@ -39,6 +39,7 @@ CREATE TABLE dbo.FacturaProveedores (
     Id                 int IDENTITY(1,1) NOT NULL CONSTRAINT PK_FacturaProveedores PRIMARY KEY,
     IdProveedor        int               NOT NULL CONSTRAINT FK_Factura_Proveedor REFERENCES dbo.Proveedor(Id),
     NumeroFactura      nvarchar(50)      NOT NULL,
+    Concepto           nvarchar(500)     NULL,
     FechaFactura       date              NOT NULL,
     FechaVencimiento   date              NULL,
     BaseImponible      decimal(12,2)     NULL,

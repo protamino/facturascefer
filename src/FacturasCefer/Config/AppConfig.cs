@@ -30,7 +30,7 @@ public sealed class AppConfig
     public sealed class ClaudeCfg
     {
         public string ApiKey { get; set; } = "";
-        public string Model { get; set; } = "claude-sonnet-5";
+        public string Model { get; set; } = "claude-opus-5";
     }
 
     private static readonly JsonSerializerOptions JsonOpts = new()

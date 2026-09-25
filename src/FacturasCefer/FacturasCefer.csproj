@@ -13,8 +13,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Anthropic" Version="12.50.0" />
     <!-- Fijado a 5.2.2: la 7.x lanza NullReferenceException en OpenAsync sobre net7.0. -->
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
+    <PackageReference Include="PdfSharp" Version="6.2.4" />
   </ItemGroup>
 
   <ItemGroup>
