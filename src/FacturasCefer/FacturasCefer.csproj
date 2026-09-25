@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net7.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>FacturasCefer</RootNamespace>
+    <AssemblyName>FacturasCefer</AssemblyName>
+    <!-- SqlClient arrastra paquetes v10 que avisan sobre net7.0-windows; inofensivo (no hay SDK net8 aquí). -->
+    <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Fijado a 5.2.2: la 7.x lanza NullReferenceException en OpenAsync sobre net7.0. -->
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Config local (con credenciales) se copia a la salida pero NO va al repo. -->
+    <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" Condition="Exists('appsettings.json')" />
+  </ItemGroup>
+
+</Project>

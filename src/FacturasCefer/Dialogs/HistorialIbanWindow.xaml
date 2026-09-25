@@ -1,0 +1,22 @@
+<Window x:Class="FacturasCefer.Dialogs.HistorialIbanWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Historial de IBAN" Width="760" Height="360"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <DockPanel Margin="16">
+        <TextBlock x:Name="TxtTitulo" DockPanel.Dock="Top" FontWeight="Bold" Margin="0,0,0,8"/>
+        <Button DockPanel.Dock="Bottom" Content="Cerrar" IsCancel="True" HorizontalAlignment="Right"
+                MinWidth="90" Margin="0,8,0,0"/>
+        <TextBlock x:Name="TxtVacio" DockPanel.Dock="Top" Text="Sin cambios de IBAN registrados."
+                   Foreground="Gray" Visibility="Collapsed"/>
+        <DataGrid x:Name="Grid" Style="{StaticResource Tabla}">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Fecha" Binding="{Binding Fecha, StringFormat=dd/MM/yyyy HH:mm}" Width="120"/>
+                <DataGridTextColumn Header="IBAN anterior" Binding="{Binding AnteriorFormateado}" Width="*"/>
+                <DataGridTextColumn Header="IBAN nuevo" Binding="{Binding NuevoFormateado}" Width="*"/>
+                <DataGridTextColumn Header="Usuario" Binding="{Binding IdUsuario}" Width="70"/>
+                <DataGridTextColumn Header="Factura" Binding="{Binding IdFacturaOrigen}" Width="70"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</Window>

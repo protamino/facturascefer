@@ -1,0 +1,14 @@
+# Build
+bin/
+obj/
+*.user
+.vs/
+
+# Config local con credenciales (usar appsettings.example.json como plantilla)
+appsettings.json
+**/appsettings.json
+
+# Salidas / temporales
+*.tmp
+publish/
+*-deploy.zip

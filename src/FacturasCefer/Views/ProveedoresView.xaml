@@ -1,0 +1,34 @@
+<UserControl x:Class="FacturasCefer.Views.ProveedoresView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <DockPanel>
+        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <CheckBox x:Name="ChkBajas" Content="Mostrar bajas" VerticalAlignment="Center" Margin="0,0,12,0"
+                          Checked="Filtro_Changed" Unchecked="Filtro_Changed"/>
+                <Button Content="Nuevo…" Style="{StaticResource BotonBarra}" Click="BtnNuevo_Click"/>
+                <Button x:Name="BtnEditar" Content="Editar…" Style="{StaticResource BotonBarra}" Click="BtnEditar_Click"/>
+                <Button x:Name="BtnBaja" Content="Dar de baja" Style="{StaticResource BotonBarra}" Click="BtnBaja_Click"/>
+                <Button x:Name="BtnHistIban" Content="Historial IBAN" Style="{StaticResource BotonBarra}" Click="BtnHistIban_Click"/>
+                <Button Content="Actualizar" Click="BtnActualizar_Click"/>
+            </StackPanel>
+            <TextBlock Text="Buscar:" VerticalAlignment="Center" Margin="0,0,6,0"/>
+            <TextBox x:Name="TxtBuscar" MaxWidth="320" HorizontalAlignment="Left" MinWidth="220"
+                     TextChanged="TxtBuscar_TextChanged" ToolTip="Razón social o CIF"/>
+        </DockPanel>
+
+        <TextBlock x:Name="TxtContador" DockPanel.Dock="Bottom" Foreground="#666" Margin="0,6,0,0"/>
+
+        <DataGrid x:Name="Grid" Style="{StaticResource Tabla}" RowStyle="{StaticResource FilaConBaja}"
+                  MouseDoubleClick="Grid_MouseDoubleClick" SelectionChanged="Grid_SelectionChanged">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Razón social" Binding="{Binding RazonSocial}" Width="2*"/>
+                <DataGridTextColumn Header="CIF" Binding="{Binding CIF}" Width="110"/>
+                <DataGridTextColumn Header="IBAN" Binding="{Binding IbanFormateado}" Width="250"/>
+                <DataGridTextColumn Header="Población" Binding="{Binding Poblacion}" Width="*"/>
+                <DataGridTextColumn Header="Teléfono" Binding="{Binding Telefono}" Width="110"/>
+                <DataGridTextColumn Header="Email" Binding="{Binding Email}" Width="*"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</UserControl>

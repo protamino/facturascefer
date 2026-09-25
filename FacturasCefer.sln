@@ -1,0 +1,27 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{79009637-5271-4E37-AD7D-24030DDFAD55}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FacturasCefer", "src\FacturasCefer\FacturasCefer.csproj", "{8D82477A-3593-4C93-B476-6652EC01848C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8D82477A-3593-4C93-B476-6652EC01848C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D82477A-3593-4C93-B476-6652EC01848C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D82477A-3593-4C93-B476-6652EC01848C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D82477A-3593-4C93-B476-6652EC01848C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{8D82477A-3593-4C93-B476-6652EC01848C} = {79009637-5271-4E37-AD7D-24030DDFAD55}
+	EndGlobalSection
+EndGlobal
