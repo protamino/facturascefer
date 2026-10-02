@@ -1,8 +1,24 @@
 # FacturasCefer — Instalación
 
+## Versión
+
+La versión se ve en la pantalla de acceso, en la barra superior de la ventana principal y en
+Propiedades → Detalles del `.exe`. Se define en `src/FacturasCefer/FacturasCefer.csproj` (`<Version>`).
+
+| Versión | Fecha | Cambios |
+|---|---|---|
+| 1.4.0 | 2026-10-02 | Número de versión visible en la app |
+| 1.3.0 | 2026-10-02 | Cuentas contables (catálogo, cuenta por defecto del proveedor, cuenta por factura) — requiere `sql/2026-10-02-cuentas-contables.sql` |
+| 1.2.0 | 2026-09-25 | Facturas pagadas con tarjeta — requiere `sql/2026-09-25-pago-tarjeta.sql` |
+| 1.1.0 | 2026-09-25 | Forma de pago: transferencia / domiciliación — requiere `sql/2026-09-25-forma-pago.sql` |
+| 1.0.0 | 2026-09-25 | Proveedores, subida con IA, listado y estados |
+
+Regla: subir el segundo número con funciones nuevas y el tercero con correcciones. Si una versión requiere
+un script SQL, ejecutarlo en SQL-01 **antes** de repartir el exe.
+
 ## Contenido del paquete
 
-`2026-09-25-FacturasCefer-deploy.zip`:
+`AAAA-MM-DD-FacturasCefer-X.Y.Z.zip` (p. ej. `2026-10-02-FacturasCefer-1.4.0.zip`):
 
 | Fichero | Qué es |
 |---|---|
@@ -56,4 +72,5 @@ Los errores técnicos se guardan en `%TEMP%\FacturasCefer\` (`app-error.log`, `l
 dotnet publish src/FacturasCefer/FacturasCefer.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o publish
 ```
 
-Después borrar los `*.xml` de `publish\` y comprimir `FacturasCefer.exe` + `appsettings.json`.
+Después borrar los `*.xml` de `publish\` y comprimir `FacturasCefer.exe` + `appsettings.json` en
+`AAAA-MM-DD-FacturasCefer-X.Y.Z.zip`. Antes de publicar, subir `<Version>` en el `.csproj` y añadir la fila al historial.

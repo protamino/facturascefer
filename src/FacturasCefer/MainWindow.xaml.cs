@@ -8,7 +8,8 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        TxtUsuario.Text = "Usuario: " + App.Usuario.NombreUser;
+        Title = "FacturasCefer " + App.Version;
+        TxtUsuario.Text = $"Versión {App.Version}   ·   Usuario: {App.Usuario.NombreUser}";
     }
 
     private async void Proveedores_VerFacturas(object? sender, Models.Proveedor p)

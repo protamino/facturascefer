@@ -11,6 +11,8 @@ public partial class LoginWindow : Window
     public LoginWindow()
     {
         InitializeComponent();
+        Title = $"FacturasCefer {App.Version} — Acceso";
+        TxtVersion.Text = "Versión " + App.Version;
         Loaded += (_, _) => TxtUsuario.Focus();
     }
 

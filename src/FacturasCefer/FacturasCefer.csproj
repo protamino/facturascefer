@@ -8,6 +8,11 @@
     <UseWPF>true</UseWPF>
     <RootNamespace>FacturasCefer</RootNamespace>
     <AssemblyName>FacturasCefer</AssemblyName>
+    <!-- Versión: subir en cada entrega (MENOR = funciones nuevas, REVISIÓN = correcciones). Historial en INSTALACION.md -->
+    <Version>1.4.0</Version>
+    <Product>FacturasCefer</Product>
+    <Company>Instituto de Reproducción CEFER</Company>
+    <Description>Registro de facturas de proveedores</Description>
     <!-- SqlClient arrastra paquetes v10 que avisan sobre net7.0-windows; inofensivo (no hay SDK net8 aquí). -->
     <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
   </PropertyGroup>

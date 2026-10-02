@@ -19,6 +19,10 @@ public partial class App : Application
     public static CuentaContableService Cuentas { get; private set; } = null!;
     public static Usuario Usuario { get; private set; } = null!;
 
+    /// <summary>Versión de la app (la del .csproj), p. ej. "1.4.0".</summary>
+    public static string Version { get; } =
+        typeof(App).Assembly.GetName().Version is { } v ? $"{v.Major}.{v.Minor}.{v.Build}" : "?";
+
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);

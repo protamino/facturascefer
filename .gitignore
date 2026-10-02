@@ -12,3 +12,4 @@ appsettings.json
 *.tmp
 publish/
 *-deploy.zip
+*FacturasCefer-*.zip
