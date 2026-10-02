@@ -16,6 +16,9 @@ public sealed class Proveedor
 
     /// <summary>Tarjeta habitual (marca + últimos 4 dígitos), si paga con tarjeta.</summary>
     public string? Tarjeta { get; set; }
+
+    /// <summary>Cuenta contable por defecto: se copia a sus facturas (cambiable en cada una).</summary>
+    public string? CuentaContable { get; set; }
     public string? Email { get; set; }
     public string? Telefono { get; set; }
     public string? Observaciones { get; set; }

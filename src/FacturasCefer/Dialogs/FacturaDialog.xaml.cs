@@ -10,6 +10,7 @@ public partial class FacturaDialog : Window
 {
     private readonly int _id;
     private FacturaListado? _f;
+    private bool _editable;
 
     /// <summary>True si se han guardado cambios (para refrescar el listado).</summary>
     public bool Modificada { get; private set; }
@@ -76,18 +77,41 @@ public partial class FacturaDialog : Window
         TxtCuotaIrpf.Text = Formato.Importe(f.CuotaIRPF);
         TxtTotal.Text = Formato.Importe(f.Total);
         TxtObservaciones.Text = f.Observaciones ?? "";
+        SelCuenta.Codigo = f.CuentaContable;
 
         var editable = f.Estado is EstadoFactura.Recibida or EstadoFactura.Validada;
         Formulario.IsEnabled = editable;
-        BtnGuardar.Visibility = editable ? Visibility.Visible : Visibility.Collapsed;
+        _editable = editable;
         BtnOriginal.IsEnabled = !string.IsNullOrWhiteSpace(f.RutaPdfOriginal);
-        if (!editable) TxtError.Text = "Las facturas Pagadas o Rechazadas no se pueden editar (deshaz el último cambio si es necesario).";
+        if (!editable) TxtError.Text = "Las facturas Pagadas o Rechazadas solo permiten cambiar la cuenta contable (deshaz el último cambio para editar el resto).";
     }
 
     private async void BtnGuardar_Click(object sender, RoutedEventArgs e)
     {
         if (_f is null) return;
         TxtError.Text = "";
+        if (!SelCuenta.EsValido) { Error("La cuenta contable no existe: elígela de la lista o dala de alta con «…».", SelCuenta); return; }
+
+        if (!_editable)
+        {
+            // Pagadas / rechazadas: solo la cuenta contable.
+            BtnGuardar.IsEnabled = false;
+            try
+            {
+                await App.Facturas.AsignarCuentaAsync(new[] { _f.Id }, SelCuenta.Codigo);
+                Modificada = true;
+                DialogResult = true;
+            }
+            catch (Exception ex)
+            {
+                App.MostrarError(ex, this);
+            }
+            finally
+            {
+                BtnGuardar.IsEnabled = true;
+            }
+            return;
+        }
 
         var numero = TxtNumero.Text.Trim();
         if (numero.Length == 0) { Error("El nº de factura es obligatorio.", TxtNumero); return; }
@@ -117,6 +141,7 @@ public partial class FacturaDialog : Window
         f.CuotaIRPF = cirpf;
         f.Total = total.Value;
         f.Observaciones = TxtObservaciones.Text;
+        f.CuentaContable = SelCuenta.Codigo;
 
         BtnGuardar.IsEnabled = false;
         try

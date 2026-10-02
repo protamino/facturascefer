@@ -42,6 +42,8 @@ public sealed class FacturaProveedor
     /// <summary>Tarjeta con la que se pagó (marca + últimos 4 dígitos).</summary>
     public string? Tarjeta { get; set; }
 
+    public string? CuentaContable { get; set; }
+
     public EstadoFactura Estado { get; set; } = EstadoFactura.Recibida;
     public DateTime? FechaPago { get; set; }
     public string RutaPdf { get; set; } = "";

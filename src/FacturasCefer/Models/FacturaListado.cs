@@ -23,6 +23,8 @@ public sealed class FacturaListado
     public string? IBAN { get; set; }
     public FormaPago FormaPago { get; set; }
     public string? Tarjeta { get; set; }
+    public string? CuentaContable { get; set; }
+    public string? CuentaDescripcion { get; set; }
     public EstadoFactura Estado { get; set; }
     public DateTime? FechaPago { get; set; }
     public string? MotivoRechazo { get; set; }
@@ -32,6 +34,7 @@ public sealed class FacturaListado
     public DateTime FechaRegistro { get; set; }
 
     public string EstadoTexto => Textos.Estado(Estado);
+    public string CuentaTexto => CuentaContable is null ? "—" : $"{CuentaContable} {CuentaDescripcion}";
     public string FormaPagoCorta => FormaPago switch
     {
         FormaPago.Domiciliacion => "Domic.",
@@ -71,6 +74,9 @@ public sealed class FiltroFacturas
     public List<EstadoFactura> Estados { get; set; } = new();
     public int? IdProveedor { get; set; }
     public FormaPago? FormaPago { get; set; }
+
+    /// <summary>Código de cuenta, o "" para las facturas sin cuenta asignada.</summary>
+    public string? CuentaContable { get; set; }
     public string? Texto { get; set; }
     public bool PorVencimiento { get; set; }
     public DateTime? Desde { get; set; }

@@ -16,6 +16,7 @@ public partial class App : Application
     public static ProveedorService Proveedores { get; private set; } = null!;
     public static FacturaService Facturas { get; private set; } = null!;
     public static ExtraccionService Extraccion { get; private set; } = null!;
+    public static CuentaContableService Cuentas { get; private set; } = null!;
     public static Usuario Usuario { get; private set; } = null!;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -51,6 +52,7 @@ public partial class App : Application
         Proveedores = new ProveedorService(Config);
         Facturas = new FacturaService(Config);
         Extraccion = new ExtraccionService(Config);
+        Cuentas = new CuentaContableService(Config);
 
         var login = new LoginWindow();
         if (login.ShowDialog() == true && login.UsuarioAutenticado is not null)

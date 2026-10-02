@@ -50,6 +50,10 @@
                 <ComboBoxItem Content="Tarjeta"/>
             </ComboBox>
 
+            <TextBlock Text="Cuenta:" Style="{StaticResource Filtro}"/>
+            <ComboBox x:Name="CmbCuenta" Width="200" IsEditable="True" IsTextSearchEnabled="True"
+                      SelectionChanged="Filtro_Changed" VerticalContentAlignment="Center"/>
+
             <ComboBox x:Name="CmbCampoFecha" Width="120" Margin="14,0,6,0" SelectedIndex="0"
                       SelectionChanged="Filtro_Changed" VerticalContentAlignment="Center">
                 <ComboBoxItem Content="Fecha factura"/>
@@ -73,6 +77,7 @@
             <Button x:Name="BtnRechazar" Content="✖ Rechazar / anular…" Style="{StaticResource BotonBarra}" Click="BtnRechazar_Click"/>
             <Button x:Name="BtnDeshacer" Content="↶ Deshacer último cambio" Style="{StaticResource BotonBarra}" Click="BtnDeshacer_Click"/>
             <Separator Width="16" Background="Transparent"/>
+            <Button x:Name="BtnCuenta" Content="Asignar cuenta…" Style="{StaticResource BotonBarra}" Click="BtnCuenta_Click"/>
             <Button x:Name="BtnFicha" Content="Ficha…" Style="{StaticResource BotonBarra}" Click="BtnFicha_Click"/>
             <Button x:Name="BtnPdf" Content="Abrir PDF" Style="{StaticResource BotonBarra}" Click="BtnPdf_Click"/>
             <Button Content="Actualizar" Click="BtnActualizar_Click"/>
@@ -92,6 +97,8 @@
                     <Separator/>
                     <MenuItem x:Name="MnuFicha" Header="Ficha…" Click="BtnFicha_Click"/>
                     <MenuItem x:Name="MnuPdf" Header="Abrir PDF" Click="BtnPdf_Click"/>
+                    <Separator/>
+                    <MenuItem x:Name="MnuCuenta" Header="Asignar cuenta…" Click="BtnCuenta_Click"/>
                 </ContextMenu>
             </DataGrid.ContextMenu>
             <DataGrid.Columns>
@@ -109,6 +116,7 @@
                 <DataGridTextColumn Header="Total" Binding="{Binding Total, StringFormat=N2}" Width="90" FontWeight="Bold"
                                     ElementStyle="{StaticResource Derecha}"/>
                 <DataGridTextColumn Header="Pago" Binding="{Binding FormaPagoCorta}" Width="60"/>
+                <DataGridTextColumn Header="Cuenta" Binding="{Binding CuentaTexto}" Width="150"/>
                 <DataGridTextColumn Header="Estado" Binding="{Binding EstadoTexto}" Width="115"/>
                 <DataGridTextColumn Header="Pagada el" Binding="{Binding FechaPago, StringFormat=dd/MM/yyyy}" Width="85"/>
                 <DataGridTextColumn Header="IBAN" Binding="{Binding AvisoIban}" Width="45">

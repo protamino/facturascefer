@@ -11,6 +11,18 @@ GO
 USE FACTURASCEFER;
 GO
 
+/* ---------- CuentaContable (catálogo, código de 8 dígitos) ---------- */
+IF OBJECT_ID(N'dbo.CuentaContable', N'U') IS NULL
+CREATE TABLE dbo.CuentaContable (
+    Codigo         char(8)        NOT NULL CONSTRAINT PK_CuentaContable PRIMARY KEY
+                   CONSTRAINT CK_CuentaContable_Codigo CHECK (Codigo LIKE '[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'),
+    Descripcion    nvarchar(150)  NOT NULL,
+    Baja           bit            NOT NULL CONSTRAINT DF_CuentaContable_Baja DEFAULT (0),
+    FechaAlta      datetime2(0)   NOT NULL CONSTRAINT DF_CuentaContable_FechaAlta DEFAULT (SYSDATETIME()),
+    IdUsuarioAlta  int            NULL
+);
+GO
+
 /* ---------- Proveedor ---------- */
 IF OBJECT_ID(N'dbo.Proveedor', N'U') IS NULL
 CREATE TABLE dbo.Proveedor (
@@ -26,6 +38,7 @@ CREATE TABLE dbo.Proveedor (
     FormaPago      tinyint           NOT NULL CONSTRAINT DF_Proveedor_FormaPago DEFAULT (1)
                    CONSTRAINT CK_Proveedor_FormaPago CHECK (FormaPago IN (1, 2, 3)), -- 1 Transferencia, 2 Domiciliación, 3 Tarjeta
     Tarjeta        nvarchar(60)      NULL,  -- tarjeta habitual: marca + últimos 4 dígitos
+    CuentaContable char(8)           NULL CONSTRAINT FK_Proveedor_CuentaContable REFERENCES dbo.CuentaContable(Codigo), -- por defecto
     Email          nvarchar(150)     NULL,
     Telefono       varchar(30)       NULL,
     Observaciones  nvarchar(max)     NULL,
@@ -55,6 +68,7 @@ CREATE TABLE dbo.FacturaProveedores (
     FormaPago          tinyint           NOT NULL CONSTRAINT DF_Factura_FormaPago DEFAULT (1)
                        CONSTRAINT CK_Factura_FormaPago CHECK (FormaPago IN (1, 2, 3)),
     Tarjeta            nvarchar(60)      NULL,  -- pagada con tarjeta: marca + últimos 4 dígitos
+    CuentaContable     char(8)           NULL CONSTRAINT FK_Factura_CuentaContable REFERENCES dbo.CuentaContable(Codigo),
     Estado             tinyint           NOT NULL CONSTRAINT DF_Factura_Estado DEFAULT (1)
                        CONSTRAINT CK_Factura_Estado CHECK (Estado IN (1,2,3,4)), -- 1 Recibida, 2 Validada, 3 Pagada, 4 Rechazada/Anulada
     FechaPago          date              NULL,
@@ -74,6 +88,10 @@ GO
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Factura_Estado')
     CREATE INDEX IX_Factura_Estado ON dbo.FacturaProveedores (Estado, FechaFactura);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Factura_CuentaContable')
+    CREATE INDEX IX_Factura_CuentaContable ON dbo.FacturaProveedores (CuentaContable);
 GO
 
 /* ---------- FacturaEstadoHistorico ---------- */

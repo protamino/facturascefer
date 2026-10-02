@@ -276,6 +276,7 @@ public partial class SubirFacturasView : UserControl
         TxtPagHasta.Text = ia.PaginaFin.ToString();
         TxtTotalPaginas.Text = $"(el PDF tiene {pdf.Paginas})";
         TxtObservaciones.Text = fr.Observaciones ?? "";
+        SelCuenta.Codigo = fr.CuentaContable;
         TxtError.Text = "";
 
         MarcarDudosos(ia.CamposDudosos);
@@ -318,6 +319,7 @@ public partial class SubirFacturasView : UserControl
         if (Formato.TryImporte(TxtTotal.Text, out v)) ia.Total = v;
         if (LeerPaginas(out var d, out var h)) { ia.PaginaInicio = d; ia.PaginaFin = h; }
         fr.Observaciones = TxtObservaciones.Text;
+        fr.CuentaContable = SelCuenta.Codigo;
     }
 
     private void MarcarDudosos(IEnumerable<string> campos)
@@ -403,9 +405,11 @@ public partial class SubirFacturasView : UserControl
         if (p is not null)
         {
             FormaPagoActual = p.FormaPago;
+            if (_pdf?.Actual?.CuentaContable is null && p.CuentaContable is not null) SelCuenta.Codigo = p.CuentaContable;
             if (p.FormaPago == FormaPago.Tarjeta && string.IsNullOrWhiteSpace(CmbTarjeta.Text)) CmbTarjeta.Text = p.Tarjeta ?? "";
         }
         ActualizarAvisoFormaPago();
+        ActualizarCuentaDefecto();
         ActualizarPanelIban();
     }
 
@@ -425,6 +429,7 @@ public partial class SubirFacturasView : UserControl
             Poblacion = ia.ProveedorPoblacion,
             Provincia = ia.ProveedorProvincia,
             FormaPago = FormaPagoActual,
+            CuentaContable = SelCuenta.Codigo,
             Tarjeta = FormaPagoActual == FormaPago.Tarjeta ? Validaciones.EnmascararTarjeta(CmbTarjeta.Text) : null,
             // En domiciliadas el IBAN de la factura es la cuenta de cargo de CEFER: no es del proveedor.
             IBAN = FormaPagoActual == FormaPago.Transferencia && Validaciones.IbanValido(iban) ? iban : null,
@@ -441,6 +446,21 @@ public partial class SubirFacturasView : UserControl
     }
 
     private void TxtIban_TextChanged(object sender, TextChangedEventArgs e) => ActualizarPanelIban();
+
+    private void SelCuenta_CodigoCambiado(object? sender, EventArgs e) => ActualizarCuentaDefecto();
+
+    /// <summary>Si el proveedor no tiene cuenta por defecto, ofrece guardar la elegida como tal.</summary>
+    private void ActualizarCuentaDefecto()
+    {
+        var cuenta = SelCuenta.Codigo;
+        if (_proveedor is null || _proveedor.CuentaContable is not null || cuenta is null)
+        {
+            ChkCuentaDefecto.Visibility = Visibility.Collapsed;
+            return;
+        }
+        ChkCuentaDefecto.Content = $"Guardar {cuenta} como cuenta por defecto de {_proveedor.RazonSocial}";
+        ChkCuentaDefecto.Visibility = Visibility.Visible;
+    }
 
     private FormaPago FormaPagoActual
     {
@@ -669,6 +689,9 @@ public partial class SubirFacturasView : UserControl
         if (!Formato.TryImporte(TxtCuotaIrpf.Text, out var cuotaIrpf)) { Error("La retención IRPF no es un importe válido.", TxtCuotaIrpf); return; }
         if (!Formato.TryImporte(TxtTotal.Text, out var total) || total is null) { Error("El total es obligatorio y debe ser un importe válido.", TxtTotal); return; }
         if (!LeerPaginas(out var desde, out var hasta)) { Error($"Rango de páginas no válido (1 a {pdf.Paginas}).", TxtPagDesde); return; }
+        if (!SelCuenta.EsValido) { Error("La cuenta contable no existe: elígela de la lista o dala de alta con «…».", SelCuenta); return; }
+        var cuenta = SelCuenta.Codigo;
+        if (cuenta is null) { Error("La cuenta contable es obligatoria.", SelCuenta); return; }
         var formaPago = FormaPagoActual;
         if (formaPago == FormaPago.Tarjeta && DpFechaPago.SelectedDate is null) { Error("Indica la fecha de pago con tarjeta.", DpFechaPago); return; }
 
@@ -713,6 +736,7 @@ public partial class SubirFacturasView : UserControl
             Total = total.Value,
             IBAN = formaPago != FormaPago.Tarjeta && iban.Length > 0 ? iban : null,
             FormaPago = formaPago,
+            CuentaContable = cuenta,
             Tarjeta = formaPago == FormaPago.Tarjeta ? Validaciones.EnmascararTarjeta(CmbTarjeta.Text) : null,
             Estado = formaPago == FormaPago.Tarjeta ? EstadoFactura.Pagada : EstadoFactura.Recibida,
             FechaPago = formaPago == FormaPago.Tarjeta ? DpFechaPago.SelectedDate : null,
@@ -745,6 +769,21 @@ public partial class SubirFacturasView : UserControl
         finally
         {
             SetOcupado(false);
+        }
+
+        if (ChkCuentaDefecto.Visibility == Visibility.Visible && ChkCuentaDefecto.IsChecked == true)
+        {
+            try
+            {
+                await App.Proveedores.AsignarCuentaAsync(proveedor.Id, cuenta);
+                proveedor.CuentaContable = cuenta;
+            }
+            catch (Exception ex)
+            {
+                App.Log("app-error.log", ex);
+                MessageBox.Show(owner, "La factura se ha guardado, pero no se ha podido asignar la cuenta por defecto al proveedor:\n\n" + ex.Message,
+                    "Aviso", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
 
         if (actualizarIban)

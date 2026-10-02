@@ -1,6 +1,6 @@
 # FACTURASCEFER — PRD
 
-*Versión 0.6 · 2026-09-25 · Autor: Fernando Marina*
+*Versión 0.7 · 2026-09-25 · Autor: Fernando Marina*
 
 ## 1. Objetivo
 
@@ -85,6 +85,13 @@ Claude devuelve un JSON con una **lista de facturas** encontradas en el PDF. Por
 - Las domiciliadas siguen el mismo flujo de estados: se marcan Pagadas a mano al comprobar el cargo (filtro por forma de pago en el listado).
 - **Tarjeta**: la factura ya está cobrada. Se indica la tarjeta (marca + últimos 4 dígitos; sugerencias: la habitual del proveedor y las ya usadas) y la fecha de pago (por defecto la de la factura), y se registra **directamente como Pagada**. «Deshacer» la devuelve a Recibida por si se registró por error. 🔒 Nunca se guarda un número de tarjeta completo: la app lo recorta a los últimos 4 dígitos.
 
+### 4.4 ter Cuenta contable
+- Catálogo de **cuentas contables** (código de 8 dígitos + descripción), mantenido en su propia pestaña; baja lógica.
+- Cada proveedor tiene una **cuenta por defecto** (opcional) que se copia a sus facturas al revisarlas.
+- En cada factura la cuenta se puede cambiar (un proveedor puede suministrar cosas de otras cuentas). **Una cuenta por factura**; obligatoria para guardar.
+- Si el proveedor aún no tiene cuenta por defecto, la revisión ofrece guardar la elegida como tal.
+- La cuenta se puede cambiar en cualquier estado (también en Pagadas, p. ej. las de tarjeta) y en bloque desde el listado («Asignar cuenta…»).
+
 ### 4.5 Emparejado de proveedor
 
 1. Buscar por **CIF** en `Proveedor`.
@@ -110,7 +117,7 @@ Claude devuelve un JSON con una **lista de facturas** encontradas en el PDF. Por
 ## 5. Listado de facturas
 
 - Tabla: proveedor, nº factura, fecha, vencimiento, base, IVA, total, estado, fecha de pago.
-- **Filtros:** estado, proveedor, forma de pago, rango de fechas (factura o vencimiento), texto libre.
+- **Filtros:** estado, proveedor, forma de pago, cuenta contable (o sin cuenta), rango de fechas (factura o vencimiento), texto libre.
 - Orden por cualquier columna. Por defecto: fecha de factura descendente.
 - **Resaltado** de facturas vencidas y no pagadas.
 - Pie con **nº de facturas y suma de totales** del filtro.
@@ -142,6 +149,14 @@ Recibida ──► Validada ──► Pagada
 
 ## 8. Modelo de datos (BD `FACTURASCEFER`)
 
+### `CuentaContable`
+| Columna | Tipo | Notas |
+|---|---|---|
+| Codigo | char(8) PK | 8 dígitos |
+| Descripcion | nvarchar(150) | |
+| Baja | bit | default 0 |
+| FechaAlta, IdUsuarioAlta | | |
+
 ### `Proveedor`
 | Columna | Tipo | Notas |
 |---|---|---|
@@ -156,6 +171,7 @@ Recibida ──► Validada ──► Pagada
 | IBAN | varchar(34) | |
 | FormaPago | tinyint | 1 Transferencia, 2 Domiciliación, 3 Tarjeta |
 | Tarjeta | nvarchar(60) NULL | tarjeta habitual (marca + últimos 4) |
+| CuentaContable | char(8) NULL FK | cuenta por defecto |
 | Email | nvarchar(150) | |
 | Telefono | varchar(30) | |
 | Observaciones | nvarchar(max) | |
@@ -181,6 +197,7 @@ Recibida ──► Validada ──► Pagada
 | IBAN | varchar(34) | el de la factura (transferencia: del proveedor; domiciliación: cuenta de cargo de CEFER) |
 | FormaPago | tinyint | 1 Transferencia, 2 Domiciliación, 3 Tarjeta |
 | Tarjeta | nvarchar(60) NULL | tarjeta con la que se pagó (marca + últimos 4) |
+| CuentaContable | char(8) NULL FK | cuenta de la factura (heredada del proveedor, cambiable) |
 | Estado | tinyint | 1 Recibida, 2 Validada, 3 Pagada, 4 Rechazada/Anulada |
 | FechaPago | date NULL | |
 | MotivoRechazo | nvarchar(500) NULL | |

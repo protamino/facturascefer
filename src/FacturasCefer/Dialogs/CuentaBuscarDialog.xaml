@@ -1,0 +1,23 @@
+<Window x:Class="FacturasCefer.Dialogs.CuentaBuscarDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Elegir cuenta contable" Width="560" Height="480"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <DockPanel Margin="16">
+        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+            <TextBlock Text="Buscar:" VerticalAlignment="Center" Margin="0,0,6,0"/>
+            <TextBox x:Name="TxtBuscar" TextChanged="TxtBuscar_TextChanged" ToolTip="Código o descripción"/>
+        </DockPanel>
+        <DockPanel DockPanel.Dock="Bottom" Margin="0,10,0,0" LastChildFill="False">
+            <Button DockPanel.Dock="Left" Content="Nueva cuenta…" Click="BtnNueva_Click"/>
+            <Button DockPanel.Dock="Right" Content="Cancelar" IsCancel="True" MinWidth="90"/>
+            <Button DockPanel.Dock="Right" Content="Elegir" IsDefault="True" MinWidth="90" Margin="0,0,8,0" Click="BtnElegir_Click"/>
+        </DockPanel>
+        <DataGrid x:Name="Grid" Style="{StaticResource Tabla}" MouseDoubleClick="Grid_MouseDoubleClick">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Código" Binding="{Binding Codigo}" Width="90"/>
+                <DataGridTextColumn Header="Descripción" Binding="{Binding Descripcion}" Width="*"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</Window>

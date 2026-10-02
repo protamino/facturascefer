@@ -65,6 +65,10 @@ public static class Validaciones
         return s.Length > 60 ? s[..60] : s;
     }
 
+    /// <summary>Cuenta contable: exactamente 8 dígitos.</summary>
+    public static bool CuentaValida(string? codigo) =>
+        codigo is { Length: 8 } && codigo.All(char.IsDigit);
+
     /// <summary>True si es un NIF, NIE o CIF español con dígito de control correcto.</summary>
     public static bool CifValido(string? valor)
     {

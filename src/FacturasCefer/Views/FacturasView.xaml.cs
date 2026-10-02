@@ -16,6 +16,12 @@ public partial class FacturasView : UserControl
         public override string ToString() => Nombre;
     }
 
+    /// <summary>Codigo null = todas; "" = sin cuenta.</summary>
+    private sealed record OpcionCuenta(string? Codigo, string Nombre)
+    {
+        public override string ToString() => Nombre;
+    }
+
     private readonly DispatcherTimer _debounce = new() { Interval = TimeSpan.FromMilliseconds(300) };
     private readonly bool _listo;
     private bool _cargandoProveedores;
@@ -48,6 +54,7 @@ public partial class FacturasView : UserControl
         ChkRecibida.IsChecked = ChkValidada.IsChecked = ChkPagada.IsChecked = ChkRechazada.IsChecked = true;
         DpDesde.SelectedDate = DpHasta.SelectedDate = null;
         CmbFormaPago.SelectedIndex = 0;
+        CmbCuenta.SelectedIndex = 0;
         TxtBuscar.Text = "";
         _cargandoProveedores = false;
         _debounce.Stop();
@@ -70,9 +77,15 @@ public partial class FacturasView : UserControl
             var opciones = new List<OpcionProveedor> { new(null, "(Todos)") };
             opciones.AddRange(proveedores.Select(p => new OpcionProveedor(p.Id, p.RazonSocial)));
 
+            var cuentaSel = (CmbCuenta.SelectedItem as OpcionCuenta)?.Codigo;
+            var cuentas = new List<OpcionCuenta> { new(null, "(Todas)"), new("", "(Sin cuenta)") };
+            cuentas.AddRange((await App.Cuentas.BuscarAsync(null, incluirBajas: true)).Select(c => new OpcionCuenta(c.Codigo, c.Texto)));
+
             _cargandoProveedores = true;
             CmbProveedor.ItemsSource = opciones;
             CmbProveedor.SelectedItem = opciones.FirstOrDefault(o => o.Id == seleccion) ?? opciones[0];
+            CmbCuenta.ItemsSource = cuentas;
+            CmbCuenta.SelectedItem = cuentas.FirstOrDefault(o => o.Codigo == cuentaSel) ?? cuentas[0];
         }
         catch (Exception ex)
         {
@@ -90,6 +103,7 @@ public partial class FacturasView : UserControl
         {
             IdProveedor = (CmbProveedor.SelectedItem as OpcionProveedor)?.Id,
             FormaPago = CmbFormaPago.SelectedIndex > 0 ? (FormaPago)CmbFormaPago.SelectedIndex : null,
+            CuentaContable = (CmbCuenta.SelectedItem as OpcionCuenta)?.Codigo,
             Texto = TxtBuscar.Text,
             PorVencimiento = CmbCampoFecha.SelectedIndex == 1,
             Desde = DpDesde.SelectedDate,
@@ -140,6 +154,7 @@ public partial class FacturasView : UserControl
         ChkPagada.IsChecked = ChkRechazada.IsChecked = false;
         CmbProveedor.SelectedIndex = 0;
         CmbFormaPago.SelectedIndex = 0;
+        CmbCuenta.SelectedIndex = 0;
         CmbCampoFecha.SelectedIndex = 0;
         DpDesde.SelectedDate = DpHasta.SelectedDate = null;
         TxtBuscar.Text = "";
@@ -170,6 +185,7 @@ public partial class FacturasView : UserControl
         BtnDeshacer.IsEnabled = MnuDeshacer.IsEnabled = deshacer;
         BtnFicha.IsEnabled = MnuFicha.IsEnabled = una;
         BtnPdf.IsEnabled = MnuPdf.IsEnabled = una;
+        BtnCuenta.IsEnabled = MnuCuenta.IsEnabled = sel.Count > 0;
     }
 
     // ------------------------------------------------------------------ Cambios de estado
@@ -214,6 +230,27 @@ public partial class FacturasView : UserControl
         {
             App.MostrarError(ex, owner);
         }
+        await CargarAsync(sel.Select(f => f.Id).ToList());
+    }
+
+    // ------------------------------------------------------------------ Cuenta contable
+
+    private async void BtnCuenta_Click(object sender, RoutedEventArgs e)
+    {
+        var sel = Seleccionadas;
+        if (sel.Count == 0) return;
+        var owner = Window.GetWindow(this);
+        var dlg = new CuentaBuscarDialog(null) { Owner = owner, Title = $"Asignar cuenta a {sel.Count} factura(s)" };
+        if (dlg.ShowDialog() != true || dlg.Codigo is null) return;
+        try
+        {
+            await App.Facturas.AsignarCuentaAsync(sel.Select(f => f.Id), dlg.Codigo);
+        }
+        catch (Exception ex)
+        {
+            App.MostrarError(ex, owner);
+        }
+        await CargarProveedoresAsync();
         await CargarAsync(sel.Select(f => f.Id).ToList());
     }
 

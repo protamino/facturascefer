@@ -116,10 +116,10 @@ public sealed class FacturaService
             cmd.Transaction = tx;
             cmd.CommandText = @"INSERT INTO dbo.FacturaProveedores
                 (IdProveedor, NumeroFactura, Concepto, FechaFactura, FechaVencimiento, BaseImponible, PorcIVA, CuotaIVA,
-                 PorcIRPF, CuotaIRPF, Total, IBAN, FormaPago, Tarjeta, Estado, FechaPago, RutaPdf, RutaPdfOriginal, PaginaInicio, PaginaFin,
+                 PorcIRPF, CuotaIRPF, Total, IBAN, FormaPago, Tarjeta, CuentaContable, Estado, FechaPago, RutaPdf, RutaPdfOriginal, PaginaInicio, PaginaFin,
                  NombreOriginal, JsonExtraccionIA, Observaciones, IdUsuarioRegistro)
                 OUTPUT INSERTED.Id
-                VALUES (@prov, @num, @conc, @fec, @vto, @base, @piva, @civa, @pirpf, @cirpf, @total, @iban, @fpago, @tarj, @estado, @fpag,
+                VALUES (@prov, @num, @conc, @fec, @vto, @base, @piva, @civa, @pirpf, @cirpf, @total, @iban, @fpago, @tarj, @cta, @estado, @fpag,
                         @ruta, @rutaOrig, @pini, @pfin, @nomOrig, @json, @obs, @usr)";
             cmd.Parameters.AddWithValue("@prov", f.IdProveedor);
             cmd.Parameters.AddWithValue("@num", f.NumeroFactura.Trim());
@@ -135,6 +135,7 @@ public sealed class FacturaService
             cmd.Parameters.AddWithValue("@iban", SqlUtil.DbVal(Validaciones.NormalizarIban(f.IBAN)));
             cmd.Parameters.AddWithValue("@fpago", (byte)f.FormaPago);
             cmd.Parameters.AddWithValue("@tarj", SqlUtil.DbVal(Validaciones.EnmascararTarjeta(f.Tarjeta)));
+            cmd.Parameters.AddWithValue("@cta", SqlUtil.DbVal(f.CuentaContable));
             cmd.Parameters.AddWithValue("@estado", (byte)f.Estado);
             cmd.Parameters.Add("@fpag", System.Data.SqlDbType.Date).Value =
                 f.Estado == EstadoFactura.Pagada ? (object?)f.FechaPago?.Date ?? f.FechaFactura.Date : DBNull.Value;
@@ -180,10 +181,11 @@ public sealed class FacturaService
     private const string SelectListado = @"
         SELECT f.Id, f.IdProveedor, p.RazonSocial, p.CIF, p.IBAN AS IbanProveedor, f.NumeroFactura, f.Concepto,
                f.FechaFactura, f.FechaVencimiento, f.BaseImponible, f.PorcIVA, f.CuotaIVA, f.PorcIRPF, f.CuotaIRPF,
-               f.Total, f.IBAN, f.FormaPago, f.Tarjeta, f.Estado, f.FechaPago, f.MotivoRechazo, f.RutaPdf, f.RutaPdfOriginal,
+               f.Total, f.IBAN, f.FormaPago, f.Tarjeta, f.CuentaContable, cc.Descripcion AS CuentaDescripcion, f.Estado, f.FechaPago, f.MotivoRechazo, f.RutaPdf, f.RutaPdfOriginal,
                f.Observaciones, f.FechaRegistro
         FROM dbo.FacturaProveedores f
-        JOIN dbo.Proveedor p ON p.Id = f.IdProveedor";
+        JOIN dbo.Proveedor p ON p.Id = f.IdProveedor
+        LEFT JOIN dbo.CuentaContable cc ON cc.Codigo = f.CuentaContable";
 
     public async Task<List<FacturaListado>> BuscarAsync(FiltroFacturas filtro, CancellationToken ct = default)
     {
@@ -206,6 +208,7 @@ public sealed class FacturaService
             WHERE f.Estado IN ({string.Join(",", estados)})
               AND (@prov IS NULL OR f.IdProveedor = @prov)
               AND (@fpago IS NULL OR f.FormaPago = @fpago)
+              AND (@cta IS NULL OR (@cta = '' AND f.CuentaContable IS NULL) OR f.CuentaContable = @cta)
               AND (@desde IS NULL OR {campoFecha} >= @desde)
               AND (@hasta IS NULL OR {campoFecha} <= @hasta)
               AND (@t IS NULL OR f.NumeroFactura LIKE '%' + @t + '%' OR f.Concepto LIKE '%' + @t + '%'
@@ -213,6 +216,7 @@ public sealed class FacturaService
             ORDER BY f.FechaFactura DESC, f.Id DESC";
         cmd.Parameters.AddWithValue("@prov", (object?)filtro.IdProveedor ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@fpago", filtro.FormaPago is { } fp ? (byte)fp : DBNull.Value);
+        cmd.Parameters.AddWithValue("@cta", (object?)filtro.CuentaContable ?? DBNull.Value);
         cmd.Parameters.Add("@desde", System.Data.SqlDbType.Date).Value = (object?)filtro.Desde?.Date ?? DBNull.Value;
         cmd.Parameters.Add("@hasta", System.Data.SqlDbType.Date).Value = (object?)filtro.Hasta?.Date ?? DBNull.Value;
         cmd.Parameters.AddWithValue("@t", SqlUtil.DbVal(filtro.Texto));
@@ -286,7 +290,7 @@ public sealed class FacturaService
         cmd.CommandText = @"UPDATE dbo.FacturaProveedores
                             SET NumeroFactura = @num, Concepto = @conc, FechaFactura = @fec, FechaVencimiento = @vto,
                                 BaseImponible = @base, PorcIVA = @piva, CuotaIVA = @civa, PorcIRPF = @pirpf,
-                                CuotaIRPF = @cirpf, Total = @total, IBAN = @iban, FormaPago = @fpago, Tarjeta = @tarj, Observaciones = @obs
+                                CuotaIRPF = @cirpf, Total = @total, IBAN = @iban, FormaPago = @fpago, Tarjeta = @tarj, CuentaContable = @cta, Observaciones = @obs
                             WHERE Id = @id AND Estado IN (1, 2)";
         cmd.Parameters.AddWithValue("@id", f.Id);
         cmd.Parameters.AddWithValue("@num", f.NumeroFactura.Trim());
@@ -302,6 +306,7 @@ public sealed class FacturaService
         cmd.Parameters.AddWithValue("@iban", SqlUtil.DbVal(Validaciones.NormalizarIban(f.IBAN)));
         cmd.Parameters.AddWithValue("@fpago", (byte)f.FormaPago);
         cmd.Parameters.AddWithValue("@tarj", SqlUtil.DbVal(Validaciones.EnmascararTarjeta(f.Tarjeta)));
+        cmd.Parameters.AddWithValue("@cta", SqlUtil.DbVal(f.CuentaContable));
         cmd.Parameters.AddWithValue("@obs", SqlUtil.DbVal(f.Observaciones));
         try
         {
@@ -312,6 +317,25 @@ public sealed class FacturaService
         {
             throw new ReglaNegocioException($"Ya existe otra factura nº {f.NumeroFactura} de este proveedor.");
         }
+    }
+
+    /// <summary>Asigna la cuenta contable a varias facturas, en cualquier estado (también Pagadas).</summary>
+    public async Task<int> AsignarCuentaAsync(IEnumerable<int> ids, string? cuenta, CancellationToken ct = default)
+    {
+        var lista = ids.ToList();
+        if (lista.Count == 0) return 0;
+        await using var cn = Conexion();
+        await cn.OpenAsync(ct);
+        await using var cmd = cn.CreateCommand();
+        var ps = new List<string>();
+        for (var i = 0; i < lista.Count; i++)
+        {
+            ps.Add("@i" + i);
+            cmd.Parameters.AddWithValue("@i" + i, lista[i]);
+        }
+        cmd.CommandText = $"UPDATE dbo.FacturaProveedores SET CuentaContable = @c WHERE Id IN ({string.Join(",", ps)})";
+        cmd.Parameters.AddWithValue("@c", SqlUtil.DbVal(cuenta));
+        return await cmd.ExecuteNonQueryAsync(ct);
     }
 
     // ------------------------------------------------------------------ Estados
@@ -469,6 +493,8 @@ public sealed class FacturaService
             IBAN = rd.Str("IBAN"),
             FormaPago = (FormaPago)rd.GetByte(rd.GetOrdinal("FormaPago")),
             Tarjeta = rd.Str("Tarjeta"),
+            CuentaContable = rd.Str("CuentaContable"),
+            CuentaDescripcion = rd.Str("CuentaDescripcion"),
             Estado = (EstadoFactura)rd.GetByte(rd.GetOrdinal("Estado")),
             FechaPago = Fecha("FechaPago"),
             MotivoRechazo = rd.Str("MotivoRechazo"),

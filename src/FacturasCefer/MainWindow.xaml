@@ -22,6 +22,9 @@
             <TabItem Header="Proveedores">
                 <views:ProveedoresView x:Name="Proveedores" VerFacturas="Proveedores_VerFacturas"/>
             </TabItem>
+            <TabItem Header="Cuentas contables">
+                <views:CuentasView/>
+            </TabItem>
         </TabControl>
     </DockPanel>
 </Window>

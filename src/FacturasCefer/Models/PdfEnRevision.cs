@@ -20,6 +20,9 @@ public sealed class FacturaEnRevision
     public string? JsonIa { get; }
 
     public string? Observaciones { get; set; }
+
+    /// <summary>Cuenta contable elegida (null: aún no se ha tocado → se toma la del proveedor).</summary>
+    public string? CuentaContable { get; set; }
     public EstadoRevision Estado { get; set; } = EstadoRevision.Pendiente;
     public int? IdFactura { get; set; }
 }
