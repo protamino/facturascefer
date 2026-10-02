@@ -10,6 +10,7 @@ public partial class FacturaDialog : Window
 {
     private readonly int _id;
     private FacturaListado? _f;
+    private List<FacturaImpuesto> _impuestos = new();
     private bool _editable;
 
     /// <summary>True si se han guardado cambios (para refrescar el listado).</summary>
@@ -34,6 +35,7 @@ public partial class FacturaDialog : Window
                 return;
             }
             GridHistorial.ItemsSource = await App.Facturas.HistorialAsync(_id);
+            _impuestos = await App.Facturas.ImpuestosAsync(_id);
         }
         catch (Exception ex)
         {
@@ -70,9 +72,11 @@ public partial class FacturaDialog : Window
         CmbFormaPago.SelectedIndex = (int)f.FormaPago - 1;
         TxtTarjeta.Text = f.Tarjeta ?? "";
         TxtConcepto.Text = f.Concepto ?? "";
-        TxtBase.Text = Formato.Importe(f.BaseImponible);
-        TxtPorcIva.Text = Formato.Porcentaje(f.PorcIVA);
-        TxtCuotaIva.Text = Formato.Importe(f.CuotaIVA);
+        // Facturas antiguas sin desglose: una línea con los datos de la cabecera.
+        Desglose.Lineas = _impuestos.Count > 0 ? _impuestos : new List<FacturaImpuesto>
+        {
+            new() { BaseImponible = f.BaseImponible ?? 0, PorcIVA = f.PorcIVA ?? 0, CuotaIVA = f.CuotaIVA ?? 0 },
+        };
         TxtPorcIrpf.Text = Formato.Porcentaje(f.PorcIRPF);
         TxtCuotaIrpf.Text = Formato.Importe(f.CuotaIRPF);
         TxtTotal.Text = Formato.Importe(f.Total);
@@ -82,6 +86,7 @@ public partial class FacturaDialog : Window
         var editable = f.Estado is EstadoFactura.Recibida or EstadoFactura.Validada;
         Formulario.IsEnabled = editable;
         _editable = editable;
+        ActualizarCuadre();
         BtnOriginal.IsEnabled = !string.IsNullOrWhiteSpace(f.RutaPdfOriginal);
         if (!editable) TxtError.Text = "Las facturas Pagadas o Rechazadas solo permiten cambiar la cuenta contable (deshaz el último cambio para editar el resto).";
     }
@@ -116,14 +121,17 @@ public partial class FacturaDialog : Window
         var numero = TxtNumero.Text.Trim();
         if (numero.Length == 0) { Error("El nº de factura es obligatorio.", TxtNumero); return; }
         if (DpFecha.SelectedDate is not DateTime fecha) { Error("La fecha es obligatoria.", DpFecha); return; }
-        if (!Leer(TxtBase, out var b) || !Leer(TxtPorcIva, out var piva) || !Leer(TxtCuotaIva, out var civa) ||
-            !Leer(TxtPorcIrpf, out var pirpf) || !Leer(TxtCuotaIrpf, out var cirpf)) return;
+        if (!Leer(TxtPorcIrpf, out var pirpf) || !Leer(TxtCuotaIrpf, out var cirpf)) return;
+        if (Desglose.Validar() is { } errorDesglose) { Error(errorDesglose, Desglose); return; }
+        var lineas = Desglose.Lineas.ToList();
+        if (await Views.SubirFacturasView.CuentasInexistentesAsync(lineas) is { } errorCuentas) { Error(errorCuentas, Desglose); return; }
         if (!Formato.TryImporte(TxtTotal.Text, out var total) || total is null) { Error("El total es obligatorio y debe ser un importe válido.", TxtTotal); return; }
 
         var iban = Validaciones.NormalizarIban(TxtIban.Text);
         if (iban.Length > 0 && !Validaciones.IbanValido(iban) && !Confirmar("El IBAN no es válido. ¿Guardar igualmente?")) return;
-        if (b is not null && Math.Abs(b.Value + (civa ?? 0) - (cirpf ?? 0) - total.Value) > 0.02m &&
-            !Confirmar($"Base + IVA − IRPF = {Formato.Importe(b.Value + (civa ?? 0) - (cirpf ?? 0))} €, pero el total es {Formato.Importe(total)} €.\n\n¿Guardar igualmente?"))
+        var calculado = Models.Desglose.TotalCalculado(lineas, cirpf);
+        if (Math.Abs(calculado - total.Value) > 0.02m &&
+            !Confirmar($"Bases + IVA + RE − IRPF = {Formato.Importe(calculado)} €, pero el total es {Formato.Importe(total)} €.\n\n¿Guardar igualmente?"))
             return;
 
         var f = _f;
@@ -134,9 +142,6 @@ public partial class FacturaDialog : Window
         f.FormaPago = (FormaPago)(Math.Max(CmbFormaPago.SelectedIndex, 0) + 1);
         f.Tarjeta = f.FormaPago == FormaPago.Tarjeta ? Validaciones.EnmascararTarjeta(TxtTarjeta.Text) : null;
         f.Concepto = TxtConcepto.Text.Trim();
-        f.BaseImponible = b;
-        f.PorcIVA = piva;
-        f.CuotaIVA = civa;
         f.PorcIRPF = pirpf;
         f.CuotaIRPF = cirpf;
         f.Total = total.Value;
@@ -146,7 +151,7 @@ public partial class FacturaDialog : Window
         BtnGuardar.IsEnabled = false;
         try
         {
-            await App.Facturas.ActualizarAsync(f);
+            await App.Facturas.ActualizarAsync(f, lineas);
             Modificada = true;
             DialogResult = true;
         }
@@ -173,6 +178,23 @@ public partial class FacturaDialog : Window
         var tarjeta = CmbFormaPago.SelectedIndex == 2;
         PanelIbanFac.Visibility = tarjeta ? Visibility.Collapsed : Visibility.Visible;
         PanelTarjetaFac.Visibility = tarjeta ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void Desglose_Cambiado(object? sender, EventArgs e) => ActualizarCuadre();
+
+    private void Importe_LostFocus(object sender, RoutedEventArgs e) => ActualizarCuadre();
+
+    private void ActualizarCuadre()
+    {
+        TxtCuadre.Text = "";
+        if (!Formato.TryImporte(TxtTotal.Text, out var t) || t is null) return;
+        Formato.TryImporte(TxtCuotaIrpf.Text, out var irpf);
+        var calculado = Desglose.TotalBase + Desglose.TotalIva + Desglose.TotalRe - (irpf ?? 0);
+        var ok = Math.Abs(calculado - t.Value) <= 0.02m;
+        TxtCuadre.Foreground = new System.Windows.Media.SolidColorBrush(ok
+            ? System.Windows.Media.Color.FromRgb(0x1B, 0x5E, 0x20)
+            : System.Windows.Media.Color.FromRgb(0x8A, 0x53, 0x00));
+        TxtCuadre.Text = ok ? "✔ Cuadra con el total" : $"⚠ Bases + IVA + RE − IRPF = {Formato.Importe(calculado)} (no cuadra)";
     }
 
     private bool Leer(TextBox tb, out decimal? valor)

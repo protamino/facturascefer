@@ -98,6 +98,15 @@ public sealed class ExtraccionService
 
         var resultado = JsonSerializer.Deserialize<ResultadoExtraccion>(json)
                         ?? throw new ReglaNegocioException("La IA ha devuelto una respuesta vacía.");
+
+        // Cabecera = suma del desglose (el % solo si hay un único tipo).
+        foreach (var f in resultado.Facturas.Where(f => f.Impuestos.Count > 0))
+        {
+            f.BaseImponible = f.Impuestos.Sum(i => i.BaseImponible);
+            f.CuotaIva = f.Impuestos.Sum(i => i.CuotaIva);
+            var tipos = f.Impuestos.Select(i => i.PorcIva).Distinct().ToList();
+            f.PorcIva = tipos.Count == 1 ? tipos[0] : null;
+        }
         return resultado.Facturas;
     }
 
@@ -114,9 +123,12 @@ public sealed class ExtraccionService
           aunque repita el número de otra (copias duplicadas): devuélvelas por separado.
           Si el documento no contiene ninguna factura, devuelve la lista vacía.
         - Fechas en formato AAAA-MM-DD. Importes como número con punto decimal, sin símbolo de moneda.
-        - Si la factura está exenta de IVA, porc_iva y cuota_iva son 0. IRPF solo si aparece una retención
+        - Si la factura está exenta de IVA, la línea de impuestos lleva porc_iva y cuota_iva 0. IRPF solo si aparece una retención
           (cuota_irpf en positivo); si no aparece, null.
-        - Si hay varios tipos de IVA, suma las bases y las cuotas; en porc_iva pon el tipo principal.
+        - impuestos: el desglose de la factura, UNA línea por cada tipo de IVA distinto (y por recargo de equivalencia
+          si lo hay), con su base imponible, porc_iva y cuota_iva tal como figuran. NO sumes tipos distintos.
+          Las bases exentas o no sujetas van en una línea con porc_iva 0 y cuota_iva 0. Si no hay recargo de
+          equivalencia, porc_re y cuota_re son 0. Siempre al menos una línea.
         - forma_pago: "domiciliacion" si la factura se cobra por recibo/adeudo domiciliado en la cuenta del cliente
           (p. ej. "recibo domiciliado", "domiciliación bancaria", "adeudo SEPA", "giro"); "transferencia" si CEFER debe
           transferir a una cuenta del proveedor; "tarjeta" si ya se ha pagado con tarjeta (VISA, Mastercard, "pagado con
@@ -139,7 +151,7 @@ public sealed class ExtraccionService
     };
 
     private static readonly string[] CamposNumero =
-        { "base_imponible", "porc_iva", "cuota_iva", "porc_irpf", "cuota_irpf", "total" };
+        { "porc_irpf", "cuota_irpf", "total" };
 
     private static Dictionary<string, JsonElement> Esquema()
     {
@@ -157,10 +169,25 @@ public sealed class ExtraccionService
         foreach (var c in CamposTexto) props[c] = new { type = "string" };
         props["forma_pago"] = new { type = "string", @enum = new[] { "transferencia", "domiciliacion", "tarjeta", "otra", "" } };
         foreach (var c in CamposNumero) props[c] = anyNull("number");
+        var linea = new Dictionary<string, object>
+        {
+            ["type"] = "object",
+            ["properties"] = new Dictionary<string, object>
+            {
+                ["base_imponible"] = new { type = "number" },
+                ["porc_iva"] = new { type = "number" },
+                ["cuota_iva"] = new { type = "number" },
+                ["porc_re"] = new { type = "number" },
+                ["cuota_re"] = new { type = "number" },
+            },
+            ["required"] = new[] { "base_imponible", "porc_iva", "cuota_iva", "porc_re", "cuota_re" },
+            ["additionalProperties"] = false,
+        };
+        props["impuestos"] = new { type = "array", items = linea };
         props["campos_dudosos"] = new
         {
             type = "array",
-            items = new { type = "string", @enum = CamposTexto.Concat(CamposNumero).ToArray() },
+            items = new { type = "string", @enum = CamposTexto.Concat(CamposNumero).Append("impuestos").ToArray() },
         };
 
         var factura = new Dictionary<string, object>

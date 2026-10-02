@@ -93,9 +93,14 @@
                 <TextBox x:Name="TxtTelefono" MaxLength="30"/>
             </StackPanel>
 
-            <StackPanel Grid.Row="5" Grid.ColumnSpan="3">
-                <TextBlock Text="Cuenta contable por defecto (se copia a sus facturas)" Style="{StaticResource Etiqueta}"/>
-                <ctrl:CuentaSelector x:Name="SelCuenta"/>
+            <StackPanel Grid.Row="5" Grid.Column="0">
+                <TextBlock Text="Cuenta de gasto por defecto (6xx…)" Style="{StaticResource Etiqueta}"/>
+                <ctrl:CuentaSelector x:Name="SelCuenta" ToolTip="Se copia a sus facturas; se puede cambiar en cada una"/>
+            </StackPanel>
+            <StackPanel Grid.Row="5" Grid.Column="2">
+                <TextBlock Text="Cuenta del proveedor (400…) para A3" Style="{StaticResource Etiqueta}"/>
+                <TextBox x:Name="TxtCuentaProveedor" MaxLength="8" FontFamily="Consolas"
+                         ToolTip="Cuenta contable del proveedor en a3ASESOR (8 dígitos). Necesaria para exportar."/>
             </StackPanel>
 
             <StackPanel Grid.Row="6" Grid.ColumnSpan="3">

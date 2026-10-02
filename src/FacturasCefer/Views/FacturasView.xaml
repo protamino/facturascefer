@@ -80,7 +80,10 @@
             <Button x:Name="BtnCuenta" Content="Asignar cuenta…" Style="{StaticResource BotonBarra}" Click="BtnCuenta_Click"/>
             <Button x:Name="BtnFicha" Content="Ficha…" Style="{StaticResource BotonBarra}" Click="BtnFicha_Click"/>
             <Button x:Name="BtnPdf" Content="Abrir PDF" Style="{StaticResource BotonBarra}" Click="BtnPdf_Click"/>
-            <Button Content="Actualizar" Click="BtnActualizar_Click"/>
+            <Button Content="Actualizar" Style="{StaticResource BotonBarra}" Click="BtnActualizar_Click"/>
+            <Separator Width="16" Background="Transparent"/>
+            <Button Content="⇪ Exportaciones ▸ a3ASESOR | con…" Click="BtnExportarA3_Click"
+                    ToolTip="Exportar facturas recibidas a CSV para el Importador de Datos de a3ASESOR | con"/>
         </StackPanel>
 
         <!-- Pie -->

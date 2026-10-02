@@ -17,6 +17,7 @@ public partial class App : Application
     public static FacturaService Facturas { get; private set; } = null!;
     public static ExtraccionService Extraccion { get; private set; } = null!;
     public static CuentaContableService Cuentas { get; private set; } = null!;
+    public static Exportacion.A3.A3ExportService ExportacionA3 { get; private set; } = null!;
     public static Usuario Usuario { get; private set; } = null!;
 
     /// <summary>Versión de la app (la del .csproj), p. ej. "1.4.0".</summary>
@@ -57,6 +58,7 @@ public partial class App : Application
         Facturas = new FacturaService(Config);
         Extraccion = new ExtraccionService(Config);
         Cuentas = new CuentaContableService(Config);
+        ExportacionA3 = new Exportacion.A3.A3ExportService(new Exportacion.A3.A3ExportRepository(Config));
 
         var login = new LoginWindow();
         if (login.ShowDialog() == true && login.UsuarioAutenticado is not null)

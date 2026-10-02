@@ -19,6 +19,9 @@ public sealed class Proveedor
 
     /// <summary>Cuenta contable por defecto: se copia a sus facturas (cambiable en cada una).</summary>
     public string? CuentaContable { get; set; }
+
+    /// <summary>Cuenta contable del proveedor (400xxxxx) para la exportación a a3ASESOR.</summary>
+    public string? CuentaProveedor { get; set; }
     public string? Email { get; set; }
     public string? Telefono { get; set; }
     public string? Observaciones { get; set; }

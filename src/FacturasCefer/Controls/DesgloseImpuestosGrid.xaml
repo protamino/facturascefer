@@ -1,0 +1,50 @@
+<UserControl x:Class="FacturasCefer.Controls.DesgloseImpuestosGrid"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <Style x:Key="Der" TargetType="TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="Margin" Value="0,0,4,0"/>
+        </Style>
+        <Style x:Key="DerEdit" TargetType="TextBox">
+            <Setter Property="TextAlignment" Value="Right"/>
+        </Style>
+    </UserControl.Resources>
+    <StackPanel>
+        <DataGrid x:Name="Grid" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                  CanUserSortColumns="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                  HorizontalGridLinesBrush="#E5E5E5" RowHeight="24" SelectionMode="Single" MinHeight="52"
+                  CellEditEnding="Grid_CellEditEnding">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Base" Width="*" MinWidth="80"
+                                    Binding="{Binding BaseImponible, StringFormat=N2}"
+                                    ElementStyle="{StaticResource Der}" EditingElementStyle="{StaticResource DerEdit}"/>
+                <DataGridTextColumn Header="% IVA" Width="52"
+                                    Binding="{Binding PorcIVA, StringFormat=0.##}"
+                                    ElementStyle="{StaticResource Der}" EditingElementStyle="{StaticResource DerEdit}"/>
+                <DataGridTextColumn Header="IVA" Width="*" MinWidth="70"
+                                    Binding="{Binding CuotaIVA, StringFormat=N2}"
+                                    ElementStyle="{StaticResource Der}" EditingElementStyle="{StaticResource DerEdit}"/>
+                <DataGridTextColumn Header="% RE" Width="46"
+                                    Binding="{Binding PorcRE, StringFormat=0.##, TargetNullValue=''}"
+                                    ElementStyle="{StaticResource Der}" EditingElementStyle="{StaticResource DerEdit}"/>
+                <DataGridTextColumn Header="RE" Width="60"
+                                    Binding="{Binding CuotaRE, StringFormat=N2, TargetNullValue=''}"
+                                    ElementStyle="{StaticResource Der}" EditingElementStyle="{StaticResource DerEdit}"/>
+                <DataGridTextColumn Header="Cuenta" Width="78"
+                                    Binding="{Binding CuentaContable, TargetNullValue=''}"/>
+            </DataGrid.Columns>
+        </DataGrid>
+        <DockPanel Margin="0,4,0,0">
+            <StackPanel x:Name="PanelBotones" DockPanel.Dock="Left" Orientation="Horizontal">
+                <Button Content="+ Línea" Padding="6,1" MinHeight="22" Click="BtnAnadir_Click" ToolTip="Añadir otro tipo de IVA o cuenta"/>
+                <Button Content="− Quitar" Padding="6,1" MinHeight="22" Margin="4,0,0,0" Click="BtnQuitar_Click"/>
+                <Button Content="Calcular cuotas" Padding="6,1" MinHeight="22" Margin="4,0,0,0" Click="BtnCalcular_Click"
+                        ToolTip="IVA = base × % IVA; RE = base × % RE (redondeo a 2 decimales)"/>
+            </StackPanel>
+            <TextBlock x:Name="TxtTotales" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="#444"/>
+        </DockPanel>
+        <TextBlock Foreground="#888" FontSize="11" TextWrapping="Wrap" Margin="0,2,0,0"
+                   Text="Una línea por tipo de IVA. «Cuenta» solo si esa parte va a una cuenta de gasto distinta de la de la factura."/>
+    </StackPanel>
+</UserControl>

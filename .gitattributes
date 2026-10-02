@@ -1,0 +1,2 @@
+# Los CSV de exportación se guardan tal cual (CRLF + saltos de línea dentro de campos entre comillas)
+*.csv -text

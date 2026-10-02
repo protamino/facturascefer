@@ -1,0 +1,71 @@
+// Configuración de la exportación de facturas recibidas a a3ASESOR | con.
+// Copiar como "a3-exportacion.json" junto a FacturasCefer.exe y adaptar. Si no existe, se usan estos valores.
+// No contiene contraseñas. Los comentarios (//) están permitidos.
+{
+  // ---------- Formato del CSV
+  "Separador": ";",
+  "SeparadorDecimal": ",",          // "," → 1000,00   |   "." → 1000.00
+  "Bom": true,                      // UTF-8 con BOM (Excel reconoce los acentos)
+  "IncluirCabecera": true,
+  "FormatoFecha": "dd/MM/yyyy",
+
+  // ---------- Reglas
+  "LongitudNumeroCorto": 10,        // NumeroFacturaCorto = últimos N caracteres del número
+  "CuentaProveedorObligatoria": true,
+  "CuentaGastoObligatoria": true,
+  "FechaOperacion": "vacia",        // "vacia" | "fecha_factura"
+  "FechaContabilizacion": "vacia",  // "vacia" | "fecha_factura" | "fecha_exportacion"
+  "RetencionSoloPrimeraFila": true, // facturas con varias filas: retención solo en la 1ª
+  "TotalSoloPrimeraFila": false,    // facturas con varias filas: total solo en la 1ª (false = en todas)
+
+  // ---------- Columnas: orden y cabecera del CSV. "Campo" debe ser uno de:
+  // FechaFactura, NumeroFactura, NumeroFacturaCorto, NIFProveedor, NombreProveedor, CuentaProveedor,
+  // CuentaGasto, BaseImponible, TipoIVA (código A3 si hay equivalencia, si no el %), PorcentajeIVA,
+  // CuotaIVA, TipoRecargoEquivalencia, CuotaRecargoEquivalencia, TipoRetencion, CuotaRetencion,
+  // TotalFactura, Concepto, FechaOperacion, FechaContabilizacion, SerieFactura, CodigoPais,
+  // ClaveOperacion, IdFactura, LineaFactura.
+  // Se pueden quitar, reordenar o renombrar (Cabecera) para que coincidan con la plantilla de A3.
+  "Columnas": [
+    { "Cabecera": "FechaFactura", "Campo": "FechaFactura" },
+    { "Cabecera": "NumeroFactura", "Campo": "NumeroFactura" },
+    { "Cabecera": "NumeroFacturaCorto", "Campo": "NumeroFacturaCorto" },
+    { "Cabecera": "NIFProveedor", "Campo": "NIFProveedor" },
+    { "Cabecera": "NombreProveedor", "Campo": "NombreProveedor" },
+    { "Cabecera": "CuentaProveedor", "Campo": "CuentaProveedor" },
+    { "Cabecera": "CuentaGasto", "Campo": "CuentaGasto" },
+    { "Cabecera": "BaseImponible", "Campo": "BaseImponible" },
+    { "Cabecera": "TipoIVA", "Campo": "TipoIVA" },
+    { "Cabecera": "CuotaIVA", "Campo": "CuotaIVA" },
+    { "Cabecera": "TipoRecargoEquivalencia", "Campo": "TipoRecargoEquivalencia" },
+    { "Cabecera": "CuotaRecargoEquivalencia", "Campo": "CuotaRecargoEquivalencia" },
+    { "Cabecera": "TipoRetencion", "Campo": "TipoRetencion" },
+    { "Cabecera": "CuotaRetencion", "Campo": "CuotaRetencion" },
+    { "Cabecera": "TotalFactura", "Campo": "TotalFactura" },
+    { "Cabecera": "Concepto", "Campo": "Concepto" },
+    { "Cabecera": "FechaOperacion", "Campo": "FechaOperacion" },
+    { "Cabecera": "FechaContabilizacion", "Campo": "FechaContabilizacion" },
+    { "Cabecera": "SerieFactura", "Campo": "SerieFactura" },
+    { "Cabecera": "CodigoPais", "Campo": "CodigoPais" },
+    { "Cabecera": "ClaveOperacion", "Campo": "ClaveOperacion" }
+  ],
+
+  // ---------- Equivalencias interno → A3 (vacías: no se inventa ningún código).
+  // Ejemplos comentados; rellenar con los códigos reales de vuestra contabilidad en A3.
+  "Equivalencias": {
+    "CuentaProveedorPorCif": {
+      // "B16780942": "40000001"
+    },
+    "CuentaGasto": {
+      // "62900000": "62900001"
+    },
+    "TipoIva": {
+      // "21": "<código A3>", "10": "<código A3>", "4": "<código A3>", "0": "<código A3>"
+    },
+    "SeriePorCif": {},
+    "Pais": {
+      // "España": "<código A3>"
+    },
+    "ClaveOperacionPorCif": {},
+    "ClaveOperacionPorTipoIva": {}
+  }
+}

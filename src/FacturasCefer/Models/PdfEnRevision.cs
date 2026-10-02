@@ -23,6 +23,9 @@ public sealed class FacturaEnRevision
 
     /// <summary>Cuenta contable elegida (null: aún no se ha tocado → se toma la del proveedor).</summary>
     public string? CuentaContable { get; set; }
+
+    /// <summary>Desglose editado por el usuario (null: aún no se ha tocado → se toma el de la IA).</summary>
+    public List<FacturaImpuesto>? Impuestos { get; set; }
     public EstadoRevision Estado { get; set; } = EstadoRevision.Pendiente;
     public int? IdFactura { get; set; }
 }

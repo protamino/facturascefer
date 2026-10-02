@@ -9,7 +9,7 @@
     <RootNamespace>FacturasCefer</RootNamespace>
     <AssemblyName>FacturasCefer</AssemblyName>
     <!-- Versión: subir en cada entrega (MENOR = funciones nuevas, REVISIÓN = correcciones). Historial en INSTALACION.md -->
-    <Version>1.4.0</Version>
+    <Version>1.5.0</Version>
     <Product>FacturasCefer</Product>
     <Company>Instituto de Reproducción CEFER</Company>
     <Description>Registro de facturas de proveedores</Description>
@@ -28,6 +28,8 @@
   <ItemGroup>
     <!-- Config local (con credenciales) se copia a la salida pero NO va al repo. -->
     <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" Condition="Exists('appsettings.json')" />
+    <!-- Plantilla de la exportación a A3: se copia junto al exe (no contiene secretos). -->
+    <None Update="a3-exportacion.example.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

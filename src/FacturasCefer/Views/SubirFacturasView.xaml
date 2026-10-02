@@ -208,17 +208,9 @@
                                 <RowDefinition/>
                                 <RowDefinition/>
                             </Grid.RowDefinitions>
-                            <StackPanel Grid.Row="0" Grid.Column="0">
-                                <TextBlock Text="Base imponible" Style="{StaticResource Etiqueta}"/>
-                                <TextBox x:Name="TxtBase" Style="{StaticResource Importe}" LostFocus="Importe_LostFocus"/>
-                            </StackPanel>
-                            <StackPanel Grid.Row="1" Grid.Column="0">
-                                <TextBlock Text="IVA" Style="{StaticResource Etiqueta}"/>
-                                <TextBox x:Name="TxtCuotaIva" Style="{StaticResource Importe}" LostFocus="Importe_LostFocus"/>
-                            </StackPanel>
-                            <StackPanel Grid.Row="1" Grid.Column="2">
-                                <TextBlock Text="% IVA" Style="{StaticResource Etiqueta}"/>
-                                <TextBox x:Name="TxtPorcIva" Style="{StaticResource Importe}"/>
+                            <StackPanel Grid.Row="0" Grid.ColumnSpan="5">
+                                <TextBlock Text="Desglose de bases e IVA" Style="{StaticResource Etiqueta}"/>
+                                <ctrl:DesgloseImpuestosGrid x:Name="Desglose" Cambiado="Desglose_Cambiado"/>
                             </StackPanel>
                             <StackPanel Grid.Row="2" Grid.Column="0">
                                 <TextBlock Text="Retención IRPF" Style="{StaticResource Etiqueta}"/>

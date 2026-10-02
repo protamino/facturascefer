@@ -36,8 +36,23 @@ public sealed class FacturaExtraida
     [JsonPropertyName("cuota_irpf")] public decimal? CuotaIrpf { get; set; }
     [JsonPropertyName("total")] public decimal? Total { get; set; }
 
+    /// <summary>Desglose por tipo de IVA / recargo, tal como figura en la factura.</summary>
+    [JsonPropertyName("impuestos")] public List<ImpuestoExtraido> Impuestos { get; set; } = new();
+
     /// <summary>Campos no encontrados o de baja confianza (nombres JSON).</summary>
     [JsonPropertyName("campos_dudosos")] public List<string> CamposDudosos { get; set; } = new();
+}
+
+/// <summary>Una línea del desglose de impuestos devuelto por la IA.</summary>
+public sealed class ImpuestoExtraido
+{
+    [JsonPropertyName("base_imponible")] public decimal BaseImponible { get; set; }
+    [JsonPropertyName("porc_iva")] public decimal PorcIva { get; set; }
+    [JsonPropertyName("cuota_iva")] public decimal CuotaIva { get; set; }
+
+    /// <summary>Recargo de equivalencia; 0 si la factura no lo indica.</summary>
+    [JsonPropertyName("porc_re")] public decimal PorcRe { get; set; }
+    [JsonPropertyName("cuota_re")] public decimal CuotaRe { get; set; }
 }
 
 public sealed class ResultadoExtraccion

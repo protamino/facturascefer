@@ -53,4 +53,7 @@ public sealed class FacturaProveedor
     public string? NombreOriginal { get; set; }
     public string? JsonExtraccionIA { get; set; }
     public string? Observaciones { get; set; }
+
+    /// <summary>Desglose de impuestos (al menos una línea). La cabecera se calcula como su suma.</summary>
+    public List<FacturaImpuesto> Impuestos { get; set; } = new();
 }

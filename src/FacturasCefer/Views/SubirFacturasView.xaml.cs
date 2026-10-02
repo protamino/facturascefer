@@ -266,9 +266,7 @@ public partial class SubirFacturasView : UserControl
         DpFecha.SelectedDate = ParseFecha(ia.FechaFactura);
         DpVencimiento.SelectedDate = ParseFecha(ia.FechaVencimiento);
         TxtConcepto.Text = ia.Concepto ?? "";
-        TxtBase.Text = Formato.Importe(ia.BaseImponible);
-        TxtPorcIva.Text = Formato.Porcentaje(ia.PorcIva);
-        TxtCuotaIva.Text = Formato.Importe(ia.CuotaIva);
+        Desglose.Lineas = fr.Impuestos ?? DesgloseDeIa(ia);
         TxtPorcIrpf.Text = Formato.Porcentaje(ia.PorcIrpf);
         TxtCuotaIrpf.Text = Formato.Importe(ia.CuotaIrpf);
         TxtTotal.Text = Formato.Importe(ia.Total);
@@ -311,10 +309,8 @@ public partial class SubirFacturasView : UserControl
         ia.FechaFactura = DpFecha.SelectedDate?.ToString("yyyy-MM-dd") ?? "";
         ia.FechaVencimiento = DpVencimiento.SelectedDate?.ToString("yyyy-MM-dd") ?? "";
         ia.Concepto = TxtConcepto.Text.Trim();
-        if (Formato.TryImporte(TxtBase.Text, out var v)) ia.BaseImponible = v;
-        if (Formato.TryImporte(TxtPorcIva.Text, out v)) ia.PorcIva = v;
-        if (Formato.TryImporte(TxtCuotaIva.Text, out v)) ia.CuotaIva = v;
-        if (Formato.TryImporte(TxtPorcIrpf.Text, out v)) ia.PorcIrpf = v;
+        fr.Impuestos = Desglose.Lineas.ToList();
+        if (Formato.TryImporte(TxtPorcIrpf.Text, out var v)) ia.PorcIrpf = v;
         if (Formato.TryImporte(TxtCuotaIrpf.Text, out v)) ia.CuotaIrpf = v;
         if (Formato.TryImporte(TxtTotal.Text, out v)) ia.Total = v;
         if (LeerPaginas(out var d, out var h)) { ia.PaginaInicio = d; ia.PaginaFin = h; }
@@ -328,7 +324,7 @@ public partial class SubirFacturasView : UserControl
         {
             ["proveedor_cif"] = TxtCif, ["iban"] = TxtIban, ["numero_factura"] = TxtNumero,
             ["fecha_factura"] = DpFecha, ["fecha_vencimiento"] = DpVencimiento, ["concepto"] = TxtConcepto,
-            ["base_imponible"] = TxtBase, ["porc_iva"] = TxtPorcIva, ["cuota_iva"] = TxtCuotaIva,
+            ["impuestos"] = Desglose, ["base_imponible"] = Desglose, ["porc_iva"] = Desglose, ["cuota_iva"] = Desglose,
             ["porc_irpf"] = TxtPorcIrpf, ["cuota_irpf"] = TxtCuotaIrpf, ["total"] = TxtTotal,
         };
         foreach (var c in mapa.Values)
@@ -573,20 +569,50 @@ public partial class SubirFacturasView : UserControl
     private void ActualizarCuadre()
     {
         TxtCuadre.Text = "";
-        if (!Formato.TryImporte(TxtBase.Text, out var b) || !Formato.TryImporte(TxtTotal.Text, out var t) || b is null || t is null) return;
-        Formato.TryImporte(TxtCuotaIva.Text, out var iva);
+        if (!Formato.TryImporte(TxtTotal.Text, out var t) || t is null) return;
         Formato.TryImporte(TxtCuotaIrpf.Text, out var irpf);
-        var calculado = b.Value + (iva ?? 0) - (irpf ?? 0);
+        var calculado = Desglose.TotalBase + Desglose.TotalIva + Desglose.TotalRe - (irpf ?? 0);
         if (Math.Abs(calculado - t.Value) <= 0.02m)
         {
             TxtCuadre.Foreground = new SolidColorBrush(Color.FromRgb(0x1B, 0x5E, 0x20));
-            TxtCuadre.Text = "✔ Base + IVA − IRPF cuadra con el total";
+            TxtCuadre.Text = "✔ Bases + IVA + RE − IRPF cuadra con el total";
         }
         else
         {
             TxtCuadre.Foreground = new SolidColorBrush(Color.FromRgb(0x8A, 0x53, 0x00));
-            TxtCuadre.Text = $"⚠ Base + IVA − IRPF = {Formato.Importe(calculado)} (no cuadra)";
+            TxtCuadre.Text = $"⚠ Bases + IVA + RE − IRPF = {Formato.Importe(calculado)} (no cuadra)";
         }
+    }
+
+    private void Desglose_Cambiado(object? sender, EventArgs e) => ActualizarCuadre();
+
+    /// <summary>Error si alguna línea usa una cuenta que no está en el catálogo (o está de baja).</summary>
+    internal static async Task<string?> CuentasInexistentesAsync(IEnumerable<FacturaImpuesto> lineas)
+    {
+        var usadas = lineas.Select(l => l.CuentaContable).Where(c => c is not null).Distinct().ToList();
+        if (usadas.Count == 0) return null;
+        var activas = (await App.Cuentas.BuscarAsync(null, incluirBajas: false)).Select(c => c.Codigo).ToHashSet();
+        var malas = usadas.Where(c => !activas.Contains(c!)).ToList();
+        return malas.Count == 0 ? null
+            : $"La cuenta {string.Join(", ", malas)} del desglose no existe en el catálogo (o está de baja). Dala de alta en «Cuentas contables».";
+    }
+
+    /// <summary>Desglose propuesto por la IA; si no lo trae (o es una factura sin IA), una línea vacía.</summary>
+    private static List<FacturaImpuesto> DesgloseDeIa(FacturaExtraida ia)
+    {
+        if (ia.Impuestos.Count > 0)
+            return ia.Impuestos.Select(i => new FacturaImpuesto
+            {
+                BaseImponible = i.BaseImponible,
+                PorcIVA = i.PorcIva,
+                CuotaIVA = i.CuotaIva,
+                PorcRE = i.PorcRe != 0 || i.CuotaRe != 0 ? i.PorcRe : null,
+                CuotaRE = i.PorcRe != 0 || i.CuotaRe != 0 ? i.CuotaRe : null,
+            }).ToList();
+        return new List<FacturaImpuesto>
+        {
+            new() { BaseImponible = ia.BaseImponible ?? 0, PorcIVA = ia.PorcIva ?? 0, CuotaIVA = ia.CuotaIva ?? 0 },
+        };
     }
 
     private void Paginas_LostFocus(object sender, RoutedEventArgs e) => _ = MostrarPaginasEnVisorAsync();
@@ -682,9 +708,9 @@ public partial class SubirFacturasView : UserControl
         if (numero.Length == 0) { Error("El nº de factura es obligatorio.", TxtNumero); return; }
         if (DpFecha.SelectedDate is not DateTime fecha) { Error("La fecha de factura es obligatoria.", DpFecha); return; }
 
-        if (!Formato.TryImporte(TxtBase.Text, out var baseImp)) { Error("La base imponible no es un importe válido.", TxtBase); return; }
-        if (!Formato.TryImporte(TxtPorcIva.Text, out var porcIva)) { Error("El % de IVA no es válido.", TxtPorcIva); return; }
-        if (!Formato.TryImporte(TxtCuotaIva.Text, out var cuotaIva)) { Error("El IVA no es un importe válido.", TxtCuotaIva); return; }
+        if (Desglose.Validar() is { } errorDesglose) { Error(errorDesglose, Desglose); return; }
+        var lineas = Desglose.Lineas.ToList();
+        if (await CuentasInexistentesAsync(lineas) is { } errorCuentas) { Error(errorCuentas, Desglose); return; }
         if (!Formato.TryImporte(TxtPorcIrpf.Text, out var porcIrpf)) { Error("El % de IRPF no es válido.", TxtPorcIrpf); return; }
         if (!Formato.TryImporte(TxtCuotaIrpf.Text, out var cuotaIrpf)) { Error("La retención IRPF no es un importe válido.", TxtCuotaIrpf); return; }
         if (!Formato.TryImporte(TxtTotal.Text, out var total) || total is null) { Error("El total es obligatorio y debe ser un importe válido.", TxtTotal); return; }
@@ -702,13 +728,10 @@ public partial class SubirFacturasView : UserControl
         if (iban.Length > 0 && !Validaciones.IbanValido(iban) &&
             !Confirmar("El IBAN de la factura no es válido (dígitos de control incorrectos).\n\n¿Guardar igualmente?"))
             return;
-        if (baseImp is not null)
-        {
-            var calculado = baseImp.Value + (cuotaIva ?? 0) - (cuotaIrpf ?? 0);
-            if (Math.Abs(calculado - total.Value) > 0.02m &&
-                !Confirmar($"Base + IVA − IRPF = {Formato.Importe(calculado)} €, pero el total es {Formato.Importe(total)} €.\n\n¿Guardar igualmente?"))
-                return;
-        }
+        var calculado = Models.Desglose.TotalCalculado(lineas, cuotaIrpf);
+        if (Math.Abs(calculado - total.Value) > 0.02m &&
+            !Confirmar($"Bases + IVA + RE − IRPF = {Formato.Importe(calculado)} €, pero el total es {Formato.Importe(total)} €.\n\n¿Guardar igualmente?"))
+            return;
 
         var actualizarIban = PanelIban.Visibility == Visibility.Visible && ChkActualizarIban.IsChecked == true;
         var ibanProveedor = Validaciones.NormalizarIban(proveedor.IBAN);
@@ -728,9 +751,7 @@ public partial class SubirFacturasView : UserControl
             Concepto = TxtConcepto.Text.Trim(),
             FechaFactura = fecha,
             FechaVencimiento = DpVencimiento.SelectedDate,
-            BaseImponible = baseImp,
-            PorcIVA = porcIva,
-            CuotaIVA = cuotaIva,
+            Impuestos = lineas,
             PorcIRPF = porcIrpf,
             CuotaIRPF = cuotaIrpf,
             Total = total.Value,

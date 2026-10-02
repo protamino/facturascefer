@@ -1,6 +1,6 @@
 # FACTURASCEFER — PRD
 
-*Versión 0.7 · 2026-09-25 · Autor: Fernando Marina*
+*Versión 0.8 · 2026-09-25 · Autor: Fernando Marina*
 
 ## 1. Objetivo
 
@@ -113,6 +113,25 @@ Claude devuelve un JSON con una **lista de facturas** encontradas en el PDF. Por
    - el PDF original subido como `originales\{guidOriginal}.pdf` (una sola vez aunque traiga varias facturas).
 2. INSERT en `FacturaProveedores` con estado **Recibida** + fila en el histórico.
 3. Si el INSERT falla → se borran los ficheros copiados (rollback).
+
+## 4 bis. Desglose de impuestos
+
+- Cada factura guarda su **desglose** en `FacturaImpuesto`: una línea por tipo de IVA (y recargo de equivalencia),
+  con cuenta de gasto opcional por línea (si está vacía, la de la factura). La cabecera guarda la suma.
+- La IA devuelve el desglose tal como figura en la factura (antes sumaba los tipos y se perdía información).
+- Revisión y ficha: tabla editable (base, % IVA, IVA, % RE, RE, cuenta) con «Calcular cuotas» y cuadre
+  bases + IVA + RE − IRPF = total.
+
+## 5 bis. Exportación a a3ASESOR | con
+
+- Desde el listado de facturas: **Exportaciones ▸ a3ASESOR | con**. Filtros: fechas, estados (por defecto Validada y
+  Pagada), incluir ya exportadas. Incidencias por factura (✖ errores no exportables, ⚠ avisos).
+- Arquitectura aislada en `Exportacion/A3`: obtención (A3ExportRepository) → transformación (A3Transformer →
+  A3ReceivedInvoiceExportDTO) → validación (A3Validator) → CSV (A3CsvWriter). Columnas y equivalencias configurables
+  en `a3-exportacion.json`, sin códigos A3 inventados.
+- Una fila por cuenta de gasto × tipo de IVA × recargo; todas repiten número, fecha, proveedor y total.
+- Historial en `FacturaExportacion` (fecha, usuario, archivo); no bloquea re-exportar (avisa).
+- Cuenta del proveedor (400…) en `Proveedor.CuentaProveedor` o por equivalencia CIF → cuenta.
 
 ## 5. Listado de facturas
 

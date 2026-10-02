@@ -7,6 +7,7 @@ Propiedades → Detalles del `.exe`. Se define en `src/FacturasCefer/FacturasCef
 
 | Versión | Fecha | Cambios |
 |---|---|---|
+| 1.5.0 | 2026-10-02 | Desglose de IVA por factura (varios tipos, recargo, cuenta por línea) y exportación a a3ASESOR \| con — requiere `sql/2026-10-02-exportacion-a3.sql` |
 | 1.4.0 | 2026-10-02 | Número de versión visible en la app |
 | 1.3.0 | 2026-10-02 | Cuentas contables (catálogo, cuenta por defecto del proveedor, cuenta por factura) — requiere `sql/2026-10-02-cuentas-contables.sql` |
 | 1.2.0 | 2026-09-25 | Facturas pagadas con tarjeta — requiere `sql/2026-09-25-pago-tarjeta.sql` |
@@ -60,6 +61,13 @@ Cerrar la app y sustituir solo `FacturasCefer.exe`. El `appsettings.json` se con
 | `Claude.Model` | `claude-opus-5` |
 
 En JSON las barras invertidas van dobles: `"\\\\192.168.0.10\\Cefer\\FacturasProveedores"`.
+
+## Exportación a a3ASESOR | con
+
+Pestaña **Facturas** → botón **«⇪ Exportaciones ▸ a3ASESOR | con…»**. Genera un CSV (UTF-8 con BOM, `;`, coma decimal)
+para el Importador de Datos de A3. La configuración (columnas, formato, equivalencias) está en
+`a3-exportacion.json` junto al exe; la plantilla comentada `a3-exportacion.example.json` se instala con el exe.
+Si no existe `a3-exportacion.json` se usan los valores por defecto de la plantilla.
 
 ## Si algo falla
 

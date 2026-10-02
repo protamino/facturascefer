@@ -254,6 +254,14 @@ public partial class FacturasView : UserControl
         await CargarAsync(sel.Select(f => f.Id).ToList());
     }
 
+    // ------------------------------------------------------------------ Exportaciones
+
+    private void BtnExportarA3_Click(object sender, RoutedEventArgs e)
+    {
+        new ExportarA3Dialog { Owner = Window.GetWindow(this) }.ShowDialog();
+        _ = CargarAsync();
+    }
+
     // ------------------------------------------------------------------ Ficha y PDF
 
     private void Grid_MouseDoubleClick(object sender, MouseButtonEventArgs e)

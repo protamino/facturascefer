@@ -91,6 +91,7 @@ public sealed class FacturaService
             f.PaginaInicio = (short)paginaInicio;
             f.PaginaFin = (short)paginaFin;
 
+            AplicarTotalesDesglose(f);
             return await InsertarAsync(f, idUsuario, ct);
         }
         catch
@@ -172,8 +173,90 @@ public sealed class FacturaService
             await hist.ExecuteNonQueryAsync(ct);
         }
 
+        await InsertarImpuestosAsync(cn, tx, id, f.Impuestos, ct);
+
         await tx.CommitAsync(ct);
         return id;
+    }
+
+    /// <summary>Cabecera (base, % IVA, cuota IVA) = suma del desglose; % solo si hay un único tipo.</summary>
+    private static void AplicarTotalesDesglose(FacturaProveedor f)
+    {
+        if (f.Impuestos.Count == 0) return;
+        f.BaseImponible = Desglose.Base(f.Impuestos);
+        f.CuotaIVA = Desglose.Iva(f.Impuestos);
+        f.PorcIVA = Desglose.PorcIvaUnico(f.Impuestos);
+    }
+
+    private static async Task InsertarImpuestosAsync(SqlConnection cn, SqlTransaction tx, int idFactura,
+        IReadOnlyList<FacturaImpuesto> lineas, CancellationToken ct)
+    {
+        for (var i = 0; i < lineas.Count; i++)
+        {
+            var l = lineas[i];
+            await using var cmd = cn.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText = @"INSERT INTO dbo.FacturaImpuesto
+                                    (IdFactura, Orden, BaseImponible, PorcIVA, CuotaIVA, PorcRE, CuotaRE, CuentaContable)
+                                VALUES (@f, @o, @b, @piva, @civa, @pre, @cre, @cta)";
+            cmd.Parameters.AddWithValue("@f", idFactura);
+            cmd.Parameters.AddWithValue("@o", (short)(i + 1));
+            cmd.Parameters.AddWithValue("@b", l.BaseImponible);
+            cmd.Parameters.AddWithValue("@piva", l.PorcIVA);
+            cmd.Parameters.AddWithValue("@civa", l.CuotaIVA);
+            cmd.Parameters.AddWithValue("@pre", (object?)l.PorcRE ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@cre", (object?)l.CuotaRE ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@cta", SqlUtil.DbVal(l.CuentaContable));
+            await cmd.ExecuteNonQueryAsync(ct);
+        }
+    }
+
+    /// <summary>Desglose de impuestos de una factura, por orden.</summary>
+    public async Task<List<FacturaImpuesto>> ImpuestosAsync(int idFactura, CancellationToken ct = default)
+    {
+        await using var cn = Conexion();
+        await cn.OpenAsync(ct);
+        return await LeerImpuestosAsync(cn, new[] { idFactura }, ct) is var d && d.TryGetValue(idFactura, out var l)
+            ? l : new List<FacturaImpuesto>();
+    }
+
+    /// <summary>Desgloses de varias facturas (para la exportación).</summary>
+    internal static async Task<Dictionary<int, List<FacturaImpuesto>>> LeerImpuestosAsync(SqlConnection cn,
+        IReadOnlyCollection<int> ids, CancellationToken ct)
+    {
+        var resultado = new Dictionary<int, List<FacturaImpuesto>>();
+        if (ids.Count == 0) return resultado;
+        foreach (var lote in ids.Chunk(1000))
+        {
+            await using var cmd = cn.CreateCommand();
+            var ps = new List<string>();
+            for (var i = 0; i < lote.Length; i++)
+            {
+                ps.Add("@i" + i);
+                cmd.Parameters.AddWithValue("@i" + i, lote[i]);
+            }
+            cmd.CommandText = $@"SELECT Id, IdFactura, Orden, BaseImponible, PorcIVA, CuotaIVA, PorcRE, CuotaRE, CuentaContable
+                                 FROM dbo.FacturaImpuesto WHERE IdFactura IN ({string.Join(",", ps)})
+                                 ORDER BY IdFactura, Orden";
+            await using var rd = await cmd.ExecuteReaderAsync(ct);
+            while (await rd.ReadAsync(ct))
+            {
+                var idF = rd.GetInt32(1);
+                if (!resultado.TryGetValue(idF, out var lista)) resultado[idF] = lista = new List<FacturaImpuesto>();
+                lista.Add(new FacturaImpuesto
+                {
+                    Id = rd.GetInt32(0),
+                    Orden = rd.GetInt16(2),
+                    BaseImponible = rd.GetDecimal(3),
+                    PorcIVA = rd.GetDecimal(4),
+                    CuotaIVA = rd.GetDecimal(5),
+                    PorcRE = rd.IsDBNull(6) ? null : rd.GetDecimal(6),
+                    CuotaRE = rd.IsDBNull(7) ? null : rd.GetDecimal(7),
+                    CuentaContable = rd.IsDBNull(8) ? null : rd.GetString(8),
+                });
+            }
+        }
+        return resultado;
     }
 
     // ------------------------------------------------------------------ Listado
@@ -282,11 +365,20 @@ public sealed class FacturaService
     // ------------------------------------------------------------------ Edición
 
     /// <summary>Guarda los datos editables de la factura. Solo se permite en estado Recibida o Validada.</summary>
-    public async Task ActualizarAsync(FacturaListado f, CancellationToken ct = default)
+    public async Task ActualizarAsync(FacturaListado f, IReadOnlyList<FacturaImpuesto> impuestos, CancellationToken ct = default)
     {
+        if (impuestos.Count > 0)
+        {
+            f.BaseImponible = Desglose.Base(impuestos);
+            f.CuotaIVA = Desglose.Iva(impuestos);
+            f.PorcIVA = Desglose.PorcIvaUnico(impuestos);
+        }
+
         await using var cn = Conexion();
         await cn.OpenAsync(ct);
+        await using var tx = (SqlTransaction)await cn.BeginTransactionAsync(ct);
         await using var cmd = cn.CreateCommand();
+        cmd.Transaction = tx;
         cmd.CommandText = @"UPDATE dbo.FacturaProveedores
                             SET NumeroFactura = @num, Concepto = @conc, FechaFactura = @fec, FechaVencimiento = @vto,
                                 BaseImponible = @base, PorcIVA = @piva, CuotaIVA = @civa, PorcIRPF = @pirpf,
@@ -317,6 +409,19 @@ public sealed class FacturaService
         {
             throw new ReglaNegocioException($"Ya existe otra factura nº {f.NumeroFactura} de este proveedor.");
         }
+
+        if (impuestos.Count > 0)
+        {
+            await using (var del = cn.CreateCommand())
+            {
+                del.Transaction = tx;
+                del.CommandText = "DELETE FROM dbo.FacturaImpuesto WHERE IdFactura = @id";
+                del.Parameters.AddWithValue("@id", f.Id);
+                await del.ExecuteNonQueryAsync(ct);
+            }
+            await InsertarImpuestosAsync(cn, tx, f.Id, impuestos, ct);
+        }
+        await tx.CommitAsync(ct);
     }
 
     /// <summary>Asigna la cuenta contable a varias facturas, en cualquier estado (también Pagadas).</summary>

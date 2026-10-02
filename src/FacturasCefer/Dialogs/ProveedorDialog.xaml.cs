@@ -39,6 +39,7 @@ public partial class ProveedorDialog : Window
         CmbFormaPago.SelectedIndex = (int)p.FormaPago - 1;
         TxtTarjeta.Text = p.Tarjeta;
         SelCuenta.Codigo = p.CuentaContable;
+        TxtCuentaProveedor.Text = p.CuentaProveedor;
         TxtDireccion.Text = p.Direccion;
         TxtCp.Text = p.CP;
         TxtPoblacion.Text = p.Poblacion;
@@ -61,6 +62,8 @@ public partial class ProveedorDialog : Window
         if (string.IsNullOrWhiteSpace(TxtRazonSocial.Text)) { Error("La razón social es obligatoria.", TxtRazonSocial); return; }
         if (cif.Length == 0) { Error("El CIF / NIF es obligatorio.", TxtCif); return; }
         if (iban.Length > 0 && !Validaciones.IbanValido(iban)) { Error("El IBAN no es válido (revisa los dígitos).", TxtIban); return; }
+        var cuentaProveedor = TxtCuentaProveedor.Text.Trim();
+        if (cuentaProveedor.Length > 0 && !Validaciones.CuentaValida(cuentaProveedor)) { Error("La cuenta del proveedor debe tener exactamente 8 dígitos.", TxtCuentaProveedor); return; }
         if (!SelCuenta.EsValido) { Error("La cuenta contable no existe: elígela de la lista o dala de alta con «…».", SelCuenta); return; }
 
         // Proveedores extranjeros pueden no tener CIF español: aviso, no bloqueo.
@@ -85,6 +88,7 @@ public partial class ProveedorDialog : Window
         _p.IBAN = iban.Length > 0 ? iban : null;
         _p.FormaPago = FormaPagoSeleccionada;
         _p.CuentaContable = SelCuenta.Codigo;
+        _p.CuentaProveedor = cuentaProveedor.Length > 0 ? cuentaProveedor : null;
         _p.Tarjeta = _p.FormaPago == FormaPago.Tarjeta ? Validaciones.EnmascararTarjeta(TxtTarjeta.Text) : null;
         _p.Direccion = TxtDireccion.Text;
         _p.CP = TxtCp.Text;
