@@ -4,6 +4,15 @@
     <DockPanel>
         <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <TextBlock Text="Cuentas:" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                <ComboBox x:Name="CmbCuentas" Width="190" SelectedIndex="0" Margin="0,0,12,0" VerticalContentAlignment="Center"
+                          SelectionChanged="Filtro_Changed">
+                    <ComboBoxItem Content="(Todos)"/>
+                    <ComboBoxItem Content="Sin cuenta de gasto"/>
+                    <ComboBoxItem Content="Sin cuenta de proveedor (400…)"/>
+                    <ComboBoxItem Content="Sin ninguna de las dos"/>
+                    <ComboBoxItem Content="Sin alguna de las dos"/>
+                </ComboBox>
                 <CheckBox x:Name="ChkBajas" Content="Mostrar bajas" VerticalAlignment="Center" Margin="0,0,12,0"
                           Checked="Filtro_Changed" Unchecked="Filtro_Changed"/>
                 <Button Content="Nuevo…" Style="{StaticResource BotonBarra}" Click="BtnNuevo_Click"/>

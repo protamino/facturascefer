@@ -716,8 +716,7 @@ public partial class SubirFacturasView : UserControl
         if (!Formato.TryImporte(TxtTotal.Text, out var total) || total is null) { Error("El total es obligatorio y debe ser un importe válido.", TxtTotal); return; }
         if (!LeerPaginas(out var desde, out var hasta)) { Error($"Rango de páginas no válido (1 a {pdf.Paginas}).", TxtPagDesde); return; }
         if (!SelCuenta.EsValido) { Error("La cuenta contable no existe: elígela de la lista o dala de alta con «…».", SelCuenta); return; }
-        var cuenta = SelCuenta.Codigo;
-        if (cuenta is null) { Error("La cuenta contable es obligatoria.", SelCuenta); return; }
+        var cuenta = SelCuenta.Codigo; // opcional: se puede asignar después (filtro «(Sin cuenta)» del listado)
         var formaPago = FormaPagoActual;
         if (formaPago == FormaPago.Tarjeta && DpFechaPago.SelectedDate is null) { Error("Indica la fecha de pago con tarjeta.", DpFechaPago); return; }
 

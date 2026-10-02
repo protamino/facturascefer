@@ -28,6 +28,14 @@ public partial class ProveedoresView : UserControl
         try
         {
             var lista = await App.Proveedores.BuscarAsync(TxtBuscar.Text, ChkBajas.IsChecked == true);
+            lista = (CmbCuentas?.SelectedIndex ?? 0) switch
+            {
+                1 => lista.Where(p => p.CuentaContable is null).ToList(),
+                2 => lista.Where(p => p.CuentaProveedor is null).ToList(),
+                3 => lista.Where(p => p.CuentaContable is null && p.CuentaProveedor is null).ToList(),
+                4 => lista.Where(p => p.CuentaContable is null || p.CuentaProveedor is null).ToList(),
+                _ => lista,
+            };
             if (carga != _cargaActual) return; // llegó una búsqueda más reciente
             Grid.ItemsSource = lista;
             TxtContador.Text = $"{lista.Count} proveedor(es)";
@@ -59,7 +67,10 @@ public partial class ProveedoresView : UserControl
         _debounce.Start();
     }
 
-    private void Filtro_Changed(object sender, RoutedEventArgs e) => _ = CargarAsync();
+    private void Filtro_Changed(object sender, RoutedEventArgs e)
+    {
+        if (IsLoaded) _ = CargarAsync(); // el desplegable dispara SelectionChanged durante InitializeComponent
+    }
     private void BtnActualizar_Click(object sender, RoutedEventArgs e) => _ = CargarAsync(Seleccionado?.Id);
     private void Grid_SelectionChanged(object sender, SelectionChangedEventArgs e) => ActualizarBotones();
 

@@ -188,7 +188,7 @@
                         </Grid>
                         <TextBlock Text="Concepto" Style="{StaticResource Etiqueta}"/>
                         <TextBox x:Name="TxtConcepto" MaxLength="500"/>
-                        <TextBlock Text="Cuenta contable *" Style="{StaticResource Etiqueta}"/>
+                        <TextBlock Text="Cuenta contable (se puede asignar después)" Style="{StaticResource Etiqueta}"/>
                         <ctrl:CuentaSelector x:Name="SelCuenta" CodigoCambiado="SelCuenta_CodigoCambiado"/>
                         <CheckBox x:Name="ChkCuentaDefecto" Visibility="Collapsed" Margin="0,4,0,0" IsChecked="True"/>
 
