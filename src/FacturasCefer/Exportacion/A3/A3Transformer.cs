@@ -109,7 +109,7 @@ public sealed class A3Transformer
     {
         var n = Math.Max(1, _cfg.LongitudNumeroCorto);
         var s = (numero ?? "").Trim();
-        return s.Length <= n ? s : s[^n..];
+        return (s.Length <= n ? s : s[^n..]).Trim();
     }
 
     /// <summary>Solo limpieza de espacios; no se altera el contenido.</summary>
