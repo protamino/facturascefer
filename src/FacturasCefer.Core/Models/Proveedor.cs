@@ -22,6 +22,10 @@ public sealed class Proveedor
 
     /// <summary>Cuenta contable del proveedor (400xxxxx) para la exportación a a3ASESOR.</summary>
     public string? CuentaProveedor { get; set; }
+
+    /// <summary>Dado de alta automáticamente por el importador; se quita al guardar su ficha.</summary>
+    public bool PendienteRevision { get; set; }
+    public string AvisoRevision => PendienteRevision ? "⚑" : "";
     public string? Email { get; set; }
     public string? Telefono { get; set; }
     public string? Observaciones { get; set; }

@@ -25,6 +25,11 @@ public sealed class FacturaListado
     public string? Tarjeta { get; set; }
     public string? CuentaContable { get; set; }
     public string? CuentaDescripcion { get; set; }
+    public OrigenFactura Origen { get; set; }
+    public bool Revisar { get; set; }
+    public string? MotivoRevision { get; set; }
+    public string OrigenTexto => Origen == OrigenFactura.Correo ? "Correo" : "";
+    public string AvisoRevision => Revisar ? "⚑" : "";
     public EstadoFactura Estado { get; set; }
     public DateTime? FechaPago { get; set; }
     public string? MotivoRechazo { get; set; }
@@ -77,6 +82,8 @@ public sealed class FiltroFacturas
 
     /// <summary>Código de cuenta, o "" para las facturas sin cuenta asignada.</summary>
     public string? CuentaContable { get; set; }
+    public OrigenFactura? Origen { get; set; }
+    public bool SoloRevisar { get; set; }
     public string? Texto { get; set; }
     public bool PorVencimiento { get; set; }
     public DateTime? Desde { get; set; }

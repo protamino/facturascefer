@@ -266,7 +266,7 @@ public partial class SubirFacturasView : UserControl
         DpFecha.SelectedDate = ParseFecha(ia.FechaFactura);
         DpVencimiento.SelectedDate = ParseFecha(ia.FechaVencimiento);
         TxtConcepto.Text = ia.Concepto ?? "";
-        Desglose.Lineas = fr.Impuestos ?? DesgloseDeIa(ia);
+        Desglose.Lineas = fr.Impuestos ?? Models.Desglose.DesdeIa(ia);
         TxtPorcIrpf.Text = Formato.Porcentaje(ia.PorcIrpf);
         TxtCuotaIrpf.Text = Formato.Importe(ia.CuotaIrpf);
         TxtTotal.Text = Formato.Importe(ia.Total);
@@ -595,24 +595,6 @@ public partial class SubirFacturasView : UserControl
         var malas = usadas.Where(c => !activas.Contains(c!)).ToList();
         return malas.Count == 0 ? null
             : $"La cuenta {string.Join(", ", malas)} del desglose no existe en el catálogo (o está de baja). Dala de alta en «Cuentas contables».";
-    }
-
-    /// <summary>Desglose propuesto por la IA; si no lo trae (o es una factura sin IA), una línea vacía.</summary>
-    private static List<FacturaImpuesto> DesgloseDeIa(FacturaExtraida ia)
-    {
-        if (ia.Impuestos.Count > 0)
-            return ia.Impuestos.Select(i => new FacturaImpuesto
-            {
-                BaseImponible = i.BaseImponible,
-                PorcIVA = i.PorcIva,
-                CuotaIVA = i.CuotaIva,
-                PorcRE = i.PorcRe != 0 || i.CuotaRe != 0 ? i.PorcRe : null,
-                CuotaRE = i.PorcRe != 0 || i.CuotaRe != 0 ? i.CuotaRe : null,
-            }).ToList();
-        return new List<FacturaImpuesto>
-        {
-            new() { BaseImponible = ia.BaseImponible ?? 0, PorcIVA = ia.PorcIva ?? 0, CuotaIVA = ia.CuotaIva ?? 0 },
-        };
     }
 
     private void Paginas_LostFocus(object sender, RoutedEventArgs e) => _ = MostrarPaginasEnVisorAsync();

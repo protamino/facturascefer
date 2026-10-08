@@ -36,6 +36,7 @@ public partial class ProveedoresView : UserControl
                 4 => lista.Where(p => p.CuentaContable is null || p.CuentaProveedor is null).ToList(),
                 _ => lista,
             };
+            if (ChkPendientes.IsChecked == true) lista = lista.Where(p => p.PendienteRevision).ToList();
             if (carga != _cargaActual) return; // llegó una búsqueda más reciente
             Grid.ItemsSource = lista;
             TxtContador.Text = $"{lista.Count} proveedor(es)";

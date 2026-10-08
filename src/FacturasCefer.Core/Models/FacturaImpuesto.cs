@@ -57,6 +57,24 @@ public static class Desglose
     public static decimal? PorcIvaUnico(IReadOnlyCollection<FacturaImpuesto> l) =>
         l.Select(x => x.PorcIVA).Distinct().Count() == 1 ? l.First().PorcIVA : null;
 
+    /// <summary>Desglose propuesto por la IA; si no lo trae, una línea con la cabecera.</summary>
+    public static List<FacturaImpuesto> DesdeIa(FacturaExtraida ia)
+    {
+        if (ia.Impuestos.Count > 0)
+            return ia.Impuestos.Select(i => new FacturaImpuesto
+            {
+                BaseImponible = i.BaseImponible,
+                PorcIVA = i.PorcIva,
+                CuotaIVA = i.CuotaIva,
+                PorcRE = i.PorcRe != 0 || i.CuotaRe != 0 ? i.PorcRe : null,
+                CuotaRE = i.PorcRe != 0 || i.CuotaRe != 0 ? i.CuotaRe : null,
+            }).ToList();
+        return new List<FacturaImpuesto>
+        {
+            new() { BaseImponible = ia.BaseImponible ?? 0, PorcIVA = ia.PorcIva ?? 0, CuotaIVA = ia.CuotaIva ?? 0 },
+        };
+    }
+
     /// <summary>Base + IVA + recargo − retención.</summary>
     public static decimal TotalCalculado(IEnumerable<FacturaImpuesto> l, decimal? retencion)
     {

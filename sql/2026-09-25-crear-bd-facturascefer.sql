@@ -40,6 +40,7 @@ CREATE TABLE dbo.Proveedor (
     Tarjeta        nvarchar(60)      NULL,  -- tarjeta habitual: marca + últimos 4 dígitos
     CuentaContable char(8)           NULL CONSTRAINT FK_Proveedor_CuentaContable REFERENCES dbo.CuentaContable(Codigo), -- por defecto
     CuentaProveedor char(8)          NULL,  -- cuenta contable del proveedor (400xxxxx) para la exportación a A3
+    PendienteRevision bit            NOT NULL CONSTRAINT DF_Proveedor_PendienteRevision DEFAULT (0), -- alta automática sin revisar
     Email          nvarchar(150)     NULL,
     Telefono       varchar(30)       NULL,
     Observaciones  nvarchar(max)     NULL,
@@ -81,6 +82,10 @@ CREATE TABLE dbo.FacturaProveedores (
     NombreOriginal     nvarchar(255)     NULL,
     JsonExtraccionIA   nvarchar(max)     NULL,
     Observaciones      nvarchar(max)     NULL,
+    Origen             tinyint           NOT NULL CONSTRAINT DF_Factura_Origen DEFAULT (1)
+                       CONSTRAINT CK_Factura_Origen CHECK (Origen IN (1, 2)),   -- 1 Manual, 2 Correo (importador)
+    Revisar            bit               NOT NULL CONSTRAINT DF_Factura_Revisar DEFAULT (0),
+    MotivoRevision     nvarchar(500)     NULL,
     FechaRegistro      datetime2(0)      NOT NULL CONSTRAINT DF_Factura_FechaRegistro DEFAULT (SYSDATETIME()),
     IdUsuarioRegistro  int               NOT NULL,
     CONSTRAINT UQ_Factura_Proveedor_Numero UNIQUE (IdProveedor, NumeroFactura)
@@ -124,6 +129,23 @@ CREATE TABLE dbo.FacturaExportacion (
     Fecha       datetime2(0)      NOT NULL CONSTRAINT DF_FacturaExportacion_Fecha DEFAULT (SYSDATETIME()),
     IdUsuario   int               NOT NULL,
     Archivo     nvarchar(400)     NOT NULL
+);
+GO
+
+/* ---------- FacturaImportacion (registro del importador automático) ---------- */
+IF OBJECT_ID(N'dbo.FacturaImportacion', N'U') IS NULL
+CREATE TABLE dbo.FacturaImportacion (
+    Id               int IDENTITY(1,1) NOT NULL CONSTRAINT PK_FacturaImportacion PRIMARY KEY,
+    Fuente           varchar(20)       NOT NULL,
+    IdExterno        varchar(200)      NOT NULL,
+    NombreFichero    nvarchar(400)     NOT NULL,
+    CorreoRemitente  nvarchar(200)     NULL,
+    CorreoAsunto     nvarchar(500)     NULL,
+    Fecha            datetime2(0)      NOT NULL CONSTRAINT DF_FacturaImportacion_Fecha DEFAULT (SYSDATETIME()),
+    Resultado        varchar(20)       NOT NULL,
+    Mensaje          nvarchar(max)     NULL,
+    IdsFacturas      varchar(400)      NULL,
+    CONSTRAINT UQ_FacturaImportacion_Externo UNIQUE (Fuente, IdExterno)
 );
 GO
 

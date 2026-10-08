@@ -1,6 +1,6 @@
 # FACTURASCEFER — PRD
 
-*Versión 0.8 · 2026-09-25 · Autor: Fernando Marina*
+*Versión 0.9 · 2026-10-08 · Autor: Fernando Marina*
 
 ## 1. Objetivo
 
@@ -133,10 +133,29 @@ Claude devuelve un JSON con una **lista de facturas** encontradas en el PDF. Por
 - Historial en `FacturaExportacion` (fecha, usuario, archivo); no bloquea re-exportar (avisa).
 - Cuenta del proveedor (400…) en `Proveedor.CuentaProveedor` o por equivalencia CIF → cuenta.
 
+## 5 ter. Importación automática desde el correo
+
+Detalle de instalación y operación en `INSTALACION-IMPORTADOR.md`.
+
+- **n8n** (n8n.institutocefer.com) lee el buzón de facturas (Microsoft 365), y **Claude Haiku** clasifica cada correo con PDF:
+  `factura_nueva` / `reclamacion_o_consulta` / `otro` / `dudoso`.
+  - `factura_nueva`: los PDF de factura se suben a Google Drive **CEFER/Facturas** (con remitente y asunto) y el correo pasa a *Facturas/Procesadas*.
+  - `dudoso` (incluye rectificativas y abonos): el correo pasa a *Facturas/Revisar* para una persona.
+  - Reclamaciones, consultas y otros: se quedan en la bandeja.
+- **Servicio de Windows `FacturasCefer.Importador`** (192.168.0.17) revisa Drive cada 5 min con una cuenta de servicio de Google y
+  procesa cada PDF con el mismo código de la app (librería `FacturasCefer.Core`):
+  - Proveedor desconocido → alta automática con **⚑ pendiente de revisar** (se quita al guardar su ficha).
+  - Duplicado → se omite. IBAN distinto → **nunca** se cambia el proveedor; la factura queda ⚑ «posible fraude».
+  - Descuadre, campos dudosos, sin cuenta de gasto, proveedor de baja o forma de pago distinta → se registra con ⚑ y el motivo.
+  - Falta CIF, nº, fecha o total → no se registra (PDF a `Error`, subida manual).
+  - Cada PDF queda en `FacturaImportacion` (no se procesa dos veces) y se mueve a `Procesadas` / `Duplicadas` / `SinFactura` / `Error`.
+- En la app: filtro **Origen** (manual / correo) y **«Solo por revisar»**; la ficha muestra el motivo y «Marcar como revisada»
+  (validar la factura también la marca como revisada).
+
 ## 5. Listado de facturas
 
 - Tabla: proveedor, nº factura, fecha, vencimiento, base, IVA, total, estado, fecha de pago.
-- **Filtros:** estado, proveedor, forma de pago, cuenta contable (o sin cuenta), rango de fechas (factura o vencimiento), texto libre.
+- **Filtros:** estado, proveedor, forma de pago, cuenta contable (o sin cuenta), origen (manual / correo), pendientes de revisar, rango de fechas (factura o vencimiento), texto libre.
 - Orden por cualquier columna. Por defecto: fecha de factura descendente.
 - **Resaltado** de facturas vencidas y no pagadas.
 - Pie con **nº de facturas y suma de totales** del filtro.
@@ -195,6 +214,7 @@ Recibida ──► Validada ──► Pagada
 | Telefono | varchar(30) | |
 | Observaciones | nvarchar(max) | |
 | Baja | bit | default 0 |
+| PendienteRevision | bit | ⚑ alta automática por revisar |
 | FechaAlta | datetime2 | |
 | IdUsuarioAlta | int | → DMSTRA.dbo.Usuarios |
 
@@ -226,8 +246,16 @@ Recibida ──► Validada ──► Pagada
 | NombreOriginal | nvarchar(255) | nombre del fichero subido |
 | JsonExtraccionIA | nvarchar(max) | respuesta bruta de Claude |
 | Observaciones | nvarchar(max) | |
+| Origen | tinyint | 1 Manual, 2 Correo (importador) |
+| Revisar | bit | ⚑ importada con algo que revisar |
+| MotivoRevision | nvarchar(500) NULL | |
 | FechaRegistro | datetime2 | |
 | IdUsuarioRegistro | int | |
+
+### `FacturaImportacion`
+Registro de cada PDF tratado por el importador: Fuente (`drive`), IdExterno (id del fichero, único con Fuente),
+NombreFichero, CorreoRemitente, CorreoAsunto, Fecha, Resultado (`procesada` / `duplicada` / `sin_factura` / `error`),
+Mensaje, IdsFacturas.
 
 ### `FacturaEstadoHistorico`
 | Columna | Tipo |
@@ -280,7 +308,9 @@ Script de creación en `sql/2026-09-25-crear-bd-facturascefer.sql`. El login `pr
 | F1 | BD + login + gestión de proveedores |
 | F2 | Caja de subida + extracción IA (varias facturas por PDF) + revisión + guardado |
 | F3 | Listado, filtros, estados e historial |
-| F4 (opcional) | Exportar a Excel, remesa SEPA |
+| F4 | Exportación a a3ASESOR \| con, cuentas contables, desglose de IVA |
+| F5 | Importación automática desde el correo (n8n + servicio importador) |
+| Futuro (opcional) | Exportar a Excel, remesa SEPA |
 
 ## 13. Decisiones y pendientes
 

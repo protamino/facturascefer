@@ -21,6 +21,13 @@ public enum FormaPago : byte
     Tarjeta = 3,
 }
 
+/// <summary>Cómo entró la factura: desde la app o por el importador automático (correo → Drive).</summary>
+public enum OrigenFactura : byte
+{
+    Manual = 1,
+    Correo = 2,
+}
+
 /// <summary>Factura de proveedor (dbo.FacturaProveedores).</summary>
 public sealed class FacturaProveedor
 {
@@ -53,6 +60,12 @@ public sealed class FacturaProveedor
     public string? NombreOriginal { get; set; }
     public string? JsonExtraccionIA { get; set; }
     public string? Observaciones { get; set; }
+
+    public OrigenFactura Origen { get; set; } = OrigenFactura.Manual;
+
+    /// <summary>Requiere revisión humana (alta automática, IBAN distinto, no cuadra, datos dudosos…).</summary>
+    public bool Revisar { get; set; }
+    public string? MotivoRevision { get; set; }
 
     /// <summary>Desglose de impuestos (al menos una línea). La cabecera se calcula como su suma.</summary>
     public List<FacturaImpuesto> Impuestos { get; set; } = new();

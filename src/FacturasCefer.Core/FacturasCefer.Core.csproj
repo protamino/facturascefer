@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Lógica compartida por la app (FacturasCefer) y el importador automático (FacturasCefer.Importador):
+       configuración, modelos, acceso a datos, extracción con IA, PDF y exportación a A3. Sin dependencias de WPF. -->
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>FacturasCefer</RootNamespace>
+    <AssemblyName>FacturasCefer.Core</AssemblyName>
+    <Version>1.6.0</Version>
+    <!-- SqlClient arrastra paquetes v10 que avisan sobre net7.0; inofensivo (no hay SDK net8 aquí). -->
+    <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Anthropic" Version="12.50.0" />
+    <!-- Fijado a 5.2.2: la 7.x lanza NullReferenceException en OpenAsync sobre net7.0. -->
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+    <PackageReference Include="PdfSharp" Version="6.2.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- La exportación a A3 usa un método interno de FacturaService; el importador, el registro de importaciones. -->
+    <InternalsVisibleTo Include="FacturasCefer.Importador" />
+  </ItemGroup>
+
+</Project>

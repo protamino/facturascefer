@@ -118,10 +118,10 @@ public sealed class FacturaService
             cmd.CommandText = @"INSERT INTO dbo.FacturaProveedores
                 (IdProveedor, NumeroFactura, Concepto, FechaFactura, FechaVencimiento, BaseImponible, PorcIVA, CuotaIVA,
                  PorcIRPF, CuotaIRPF, Total, IBAN, FormaPago, Tarjeta, CuentaContable, Estado, FechaPago, RutaPdf, RutaPdfOriginal, PaginaInicio, PaginaFin,
-                 NombreOriginal, JsonExtraccionIA, Observaciones, IdUsuarioRegistro)
+                 NombreOriginal, JsonExtraccionIA, Observaciones, Origen, Revisar, MotivoRevision, IdUsuarioRegistro)
                 OUTPUT INSERTED.Id
                 VALUES (@prov, @num, @conc, @fec, @vto, @base, @piva, @civa, @pirpf, @cirpf, @total, @iban, @fpago, @tarj, @cta, @estado, @fpag,
-                        @ruta, @rutaOrig, @pini, @pfin, @nomOrig, @json, @obs, @usr)";
+                        @ruta, @rutaOrig, @pini, @pfin, @nomOrig, @json, @obs, @orig, @rev, @motrev, @usr)";
             cmd.Parameters.AddWithValue("@prov", f.IdProveedor);
             cmd.Parameters.AddWithValue("@num", f.NumeroFactura.Trim());
             cmd.Parameters.AddWithValue("@conc", SqlUtil.DbVal(f.Concepto));
@@ -147,6 +147,9 @@ public sealed class FacturaService
             cmd.Parameters.AddWithValue("@nomOrig", SqlUtil.DbVal(f.NombreOriginal));
             cmd.Parameters.AddWithValue("@json", SqlUtil.DbVal(f.JsonExtraccionIA));
             cmd.Parameters.AddWithValue("@obs", SqlUtil.DbVal(f.Observaciones));
+            cmd.Parameters.AddWithValue("@orig", (byte)f.Origen);
+            cmd.Parameters.AddWithValue("@rev", f.Revisar);
+            cmd.Parameters.AddWithValue("@motrev", SqlUtil.DbVal(f.MotivoRevision is { Length: > 500 } m ? m[..500] : f.MotivoRevision));
             cmd.Parameters.AddWithValue("@usr", idUsuario);
             try
             {
@@ -164,9 +167,11 @@ public sealed class FacturaService
             hist.CommandText = @"INSERT INTO dbo.FacturaEstadoHistorico (IdFactura, EstadoAnterior, EstadoNuevo, IdUsuario, Comentario)
                                  VALUES (@id, NULL, @estado, @usr, @com)";
             var tarjeta = Validaciones.EnmascararTarjeta(f.Tarjeta);
-            hist.Parameters.AddWithValue("@com", f.Estado == EstadoFactura.Pagada
+            var com = f.Estado == EstadoFactura.Pagada
                 ? $"Alta: pagada con tarjeta{(tarjeta.Length > 0 ? " " + tarjeta : "")} el {f.FechaPago ?? f.FechaFactura:dd/MM/yyyy}"
-                : "Alta de la factura");
+                : "Alta de la factura";
+            if (f.Origen == OrigenFactura.Correo) com = "Importada automáticamente (correo). " + com;
+            hist.Parameters.AddWithValue("@com", com);
             hist.Parameters.AddWithValue("@id", id);
             hist.Parameters.AddWithValue("@estado", (byte)f.Estado);
             hist.Parameters.AddWithValue("@usr", idUsuario);
@@ -265,7 +270,7 @@ public sealed class FacturaService
         SELECT f.Id, f.IdProveedor, p.RazonSocial, p.CIF, p.IBAN AS IbanProveedor, f.NumeroFactura, f.Concepto,
                f.FechaFactura, f.FechaVencimiento, f.BaseImponible, f.PorcIVA, f.CuotaIVA, f.PorcIRPF, f.CuotaIRPF,
                f.Total, f.IBAN, f.FormaPago, f.Tarjeta, f.CuentaContable, cc.Descripcion AS CuentaDescripcion, f.Estado, f.FechaPago, f.MotivoRechazo, f.RutaPdf, f.RutaPdfOriginal,
-               f.Observaciones, f.FechaRegistro
+               f.Observaciones, f.FechaRegistro, f.Origen, f.Revisar, f.MotivoRevision
         FROM dbo.FacturaProveedores f
         JOIN dbo.Proveedor p ON p.Id = f.IdProveedor
         LEFT JOIN dbo.CuentaContable cc ON cc.Codigo = f.CuentaContable";
@@ -292,6 +297,8 @@ public sealed class FacturaService
               AND (@prov IS NULL OR f.IdProveedor = @prov)
               AND (@fpago IS NULL OR f.FormaPago = @fpago)
               AND (@cta IS NULL OR (@cta = '' AND f.CuentaContable IS NULL) OR f.CuentaContable = @cta)
+              AND (@orig IS NULL OR f.Origen = @orig)
+              AND (@solorev = 0 OR f.Revisar = 1)
               AND (@desde IS NULL OR {campoFecha} >= @desde)
               AND (@hasta IS NULL OR {campoFecha} <= @hasta)
               AND (@t IS NULL OR f.NumeroFactura LIKE '%' + @t + '%' OR f.Concepto LIKE '%' + @t + '%'
@@ -300,6 +307,8 @@ public sealed class FacturaService
         cmd.Parameters.AddWithValue("@prov", (object?)filtro.IdProveedor ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@fpago", filtro.FormaPago is { } fp ? (byte)fp : DBNull.Value);
         cmd.Parameters.AddWithValue("@cta", (object?)filtro.CuentaContable ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@orig", filtro.Origen is { } o ? (byte)o : DBNull.Value);
+        cmd.Parameters.AddWithValue("@solorev", filtro.SoloRevisar);
         cmd.Parameters.Add("@desde", System.Data.SqlDbType.Date).Value = (object?)filtro.Desde?.Date ?? DBNull.Value;
         cmd.Parameters.Add("@hasta", System.Data.SqlDbType.Date).Value = (object?)filtro.Hasta?.Date ?? DBNull.Value;
         cmd.Parameters.AddWithValue("@t", SqlUtil.DbVal(filtro.Texto));
@@ -443,6 +452,17 @@ public sealed class FacturaService
         return await cmd.ExecuteNonQueryAsync(ct);
     }
 
+    /// <summary>Quita la marca «Revisar» (la factura ya la ha revisado una persona).</summary>
+    public async Task MarcarRevisadaAsync(int idFactura, CancellationToken ct = default)
+    {
+        await using var cn = Conexion();
+        await cn.OpenAsync(ct);
+        await using var cmd = cn.CreateCommand();
+        cmd.CommandText = "UPDATE dbo.FacturaProveedores SET Revisar = 0 WHERE Id = @id";
+        cmd.Parameters.AddWithValue("@id", idFactura);
+        await cmd.ExecuteNonQueryAsync(ct);
+    }
+
     // ------------------------------------------------------------------ Estados
 
     /// <summary>
@@ -544,7 +564,8 @@ public sealed class FacturaService
                 upd.CommandText = @"UPDATE dbo.FacturaProveedores
                                     SET Estado = @n,
                                         FechaPago = CASE WHEN @n = 3 THEN @fp ELSE NULL END,
-                                        MotivoRechazo = CASE WHEN @n = 4 THEN @mot ELSE NULL END
+                                        MotivoRechazo = CASE WHEN @n = 4 THEN @mot ELSE NULL END,
+                                        Revisar = CASE WHEN @n = 2 THEN 0 ELSE Revisar END  -- validar = revisada
                                     WHERE Id = @id";
                 upd.Parameters.AddWithValue("@n", (byte)nuevo.Value);
                 upd.Parameters.Add("@fp", System.Data.SqlDbType.Date).Value = (object?)fechaPago?.Date ?? DBNull.Value;
@@ -607,6 +628,9 @@ public sealed class FacturaService
             RutaPdfOriginal = rd.Str("RutaPdfOriginal"),
             Observaciones = rd.Str("Observaciones"),
             FechaRegistro = rd.GetDateTime(rd.GetOrdinal("FechaRegistro")),
+            Origen = (OrigenFactura)rd.GetByte(rd.GetOrdinal("Origen")),
+            Revisar = rd.GetBoolean(rd.GetOrdinal("Revisar")),
+            MotivoRevision = rd.Str("MotivoRevision"),
         };
     }
 }

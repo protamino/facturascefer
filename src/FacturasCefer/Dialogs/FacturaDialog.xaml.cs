@@ -23,6 +23,20 @@ public partial class FacturaDialog : Window
         Loaded += async (_, _) => await CargarAsync();
     }
 
+    private async void BtnRevisada_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            await App.Facturas.MarcarRevisadaAsync(_id);
+            PanelRevisar.Visibility = Visibility.Collapsed;
+            Modificada = true;
+        }
+        catch (Exception ex)
+        {
+            App.MostrarError(ex, this);
+        }
+    }
+
     private async Task CargarAsync()
     {
         try
@@ -53,7 +67,15 @@ public partial class FacturaDialog : Window
         if (f.Estado == EstadoFactura.Rechazada && !string.IsNullOrWhiteSpace(f.MotivoRechazo)) estado += $" — Motivo: {f.MotivoRechazo}";
         if (f.Vencida) estado += "   ⚠ VENCIDA";
         estado += $"   ·   Registrada el {f.FechaRegistro:dd/MM/yyyy HH:mm}";
+        if (f.Origen == OrigenFactura.Correo) estado += "   ·   Importada del correo";
         TxtEstado.Text = estado;
+
+        if (f.Revisar)
+        {
+            TxtRevisar.Text = "⚑ Pendiente de revisar" +
+                              (string.IsNullOrWhiteSpace(f.MotivoRevision) ? "." : ": " + f.MotivoRevision);
+            PanelRevisar.Visibility = Visibility.Visible;
+        }
 
         if (f.IbanDistinto)
         {

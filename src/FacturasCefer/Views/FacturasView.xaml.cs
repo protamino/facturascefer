@@ -55,6 +55,8 @@ public partial class FacturasView : UserControl
         DpDesde.SelectedDate = DpHasta.SelectedDate = null;
         CmbFormaPago.SelectedIndex = 0;
         CmbCuenta.SelectedIndex = 0;
+        CmbOrigen.SelectedIndex = 0;
+        ChkRevisar.IsChecked = false;
         TxtBuscar.Text = "";
         _cargandoProveedores = false;
         _debounce.Stop();
@@ -104,6 +106,8 @@ public partial class FacturasView : UserControl
             IdProveedor = (CmbProveedor.SelectedItem as OpcionProveedor)?.Id,
             FormaPago = CmbFormaPago.SelectedIndex > 0 ? (FormaPago)CmbFormaPago.SelectedIndex : null,
             CuentaContable = (CmbCuenta.SelectedItem as OpcionCuenta)?.Codigo,
+            Origen = CmbOrigen.SelectedIndex > 0 ? (OrigenFactura)CmbOrigen.SelectedIndex : null,
+            SoloRevisar = ChkRevisar.IsChecked == true,
             Texto = TxtBuscar.Text,
             PorVencimiento = CmbCampoFecha.SelectedIndex == 1,
             Desde = DpDesde.SelectedDate,
@@ -128,8 +132,10 @@ public partial class FacturasView : UserControl
             foreach (var f in lista.Where(f => seleccionar.Contains(f.Id))) Grid.SelectedItems.Add(f);
 
             var vencidas = lista.Count(f => f.Vencida);
+            var revisar = lista.Count(f => f.Revisar);
             TxtResumen.Text = $"{lista.Count} factura(s)   ·   Total: {Formato.Importe(lista.Sum(f => f.Total))} €" +
-                              (vencidas > 0 ? $"   ·   ⚠ {vencidas} vencida(s) sin pagar" : "");
+                              (vencidas > 0 ? $"   ·   ⚠ {vencidas} vencida(s) sin pagar" : "") +
+                              (revisar > 0 ? $"   ·   ⚑ {revisar} por revisar" : "");
         }
         catch (Exception ex)
         {
@@ -155,6 +161,8 @@ public partial class FacturasView : UserControl
         CmbProveedor.SelectedIndex = 0;
         CmbFormaPago.SelectedIndex = 0;
         CmbCuenta.SelectedIndex = 0;
+        CmbOrigen.SelectedIndex = 0;
+        ChkRevisar.IsChecked = false;
         CmbCampoFecha.SelectedIndex = 0;
         DpDesde.SelectedDate = DpHasta.SelectedDate = null;
         TxtBuscar.Text = "";

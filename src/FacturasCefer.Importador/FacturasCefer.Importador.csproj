@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <!-- Servicio de Windows que importa automáticamente las facturas que n8n deja en Google Drive (CEFER/Facturas).
+       Usa la misma lógica que la app (FacturasCefer.Core). Instalación: INSTALACION-IMPORTADOR.md -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net7.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>FacturasCefer.Importador</RootNamespace>
+    <AssemblyName>FacturasCefer.Importador</AssemblyName>
+    <Version>1.6.0</Version>
+    <Product>FacturasCefer Importador</Product>
+    <Company>Instituto de Reproducción CEFER</Company>
+    <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FacturasCefer.Core\FacturasCefer.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" Condition="Exists('appsettings.json')" />
+    <None Update="google-service-account.json" CopyToOutputDirectory="PreserveNewest" Condition="Exists('google-service-account.json')" />
+    <None Update="appsettings.example.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="instalar-servicio.ps1" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Apis.Drive.v3" Version="1.77.0.4276" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="7.0.1" />
+  </ItemGroup>
+
+</Project>

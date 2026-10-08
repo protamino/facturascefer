@@ -24,6 +24,13 @@
                 <TextBlock Text="Cuenta contable:" VerticalAlignment="Center" Margin="0,0,8,0" FontWeight="SemiBold"/>
                 <ctrl:CuentaSelector x:Name="SelCuenta"/>
             </DockPanel>
+            <Border x:Name="PanelRevisar" Visibility="Collapsed" Background="#FFF3E0" Padding="10,6" Margin="0,8,0,0" CornerRadius="3">
+                <DockPanel>
+                    <Button x:Name="BtnRevisada" DockPanel.Dock="Right" Content="✔ Marcar como revisada" VerticalAlignment="Top"
+                            Margin="10,0,0,0" Click="BtnRevisada_Click"/>
+                    <TextBlock x:Name="TxtRevisar" Foreground="#8A4500" TextWrapping="Wrap"/>
+                </DockPanel>
+            </Border>
             <Border x:Name="PanelIban" Visibility="Collapsed" Background="#FDECEA" Padding="10,6" Margin="0,8,0,0" CornerRadius="3">
                 <TextBlock x:Name="TxtIbanAviso" Foreground="#8B1A1A" TextWrapping="Wrap"/>
             </Border>

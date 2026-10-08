@@ -1,0 +1,416 @@
+{
+  "name": "Facturas de proveedores (correo → Drive)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Facturas de proveedores por correo\n1. Outlook (cada minuto, solo correos con adjuntos)\n2. Claude Haiku clasifica: factura_nueva / reclamacion_o_consulta / otro / dudoso\n3. factura_nueva → PDF a Drive **CEFER/Facturas** (+ remitente y asunto) → correo a **Facturas/Procesadas**\n4. dudoso → correo a **Facturas/Revisar**\n5. reclamaciones y otros → se quedan en la bandeja de entrada\n\nEl servicio **FacturasCefer Importador** (192.168.0.17) recoge los PDF de Drive y los registra.",
+        "height": 260,
+        "width": 560
+      },
+      "id": "0a7fbeea-38bf-466e-af7d-5476670b5028",
+      "name": "Nota",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "output": "raw",
+        "filters": {
+          "hasAttachments": true
+        },
+        "options": {
+          "downloadAttachments": true
+        }
+      },
+      "id": "58a2e45e-0399-4fc6-90e6-e7ffd2f7468e",
+      "name": "Correo nuevo",
+      "type": "n8n-nodes-base.microsoftOutlookTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        100
+      ],
+      "notes": "Elegir el buzón/carpeta de entrada de facturas en los filtros",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Un item por correo con PDF; arma la petición a Claude. Sin PDF adjunto → se ignora.\nconst SISTEMA = \"Clasificas los correos que llegan al buzón de facturas de proveedores de CEFER (Instituto de Reproducción CEFER S.L., CIF B60508918).\\nRecibes el remitente, el asunto, el cuerpo y los PDF adjuntos. Responde SOLO con un objeto JSON, sin texto adicional:\\n{\\\"categoria\\\": \\\"...\\\", \\\"motivo\\\": \\\"frase corta\\\", \\\"pdfs_factura\\\": [\\\"nombre exacto de cada PDF adjunto que sea una factura\\\"]}\\n\\nCategorías:\\n- \\\"factura_nueva\\\": un proveedor envía a CEFER una o varias facturas (o recibos con valor de factura) para registrarlas o pagarlas. Incluye facturas de suscripciones, domiciliaciones y pagos con tarjeta.\\n- \\\"reclamacion_o_consulta\\\": recordatorio o reclamación de pago, consulta, queja o conversación sobre una factura ya enviada, aunque adjunte una copia.\\n- \\\"otro\\\": publicidad, presupuestos, proformas, pedidos, albaranes, justificantes de transferencia, extractos, contratos, notificaciones sin factura, facturas emitidas POR CEFER.\\n- \\\"dudoso\\\": no está claro, o es una factura rectificativa / abono, o mezcla una factura nueva con una reclamación.\\n\\nEn \\\"pdfs_factura\\\" pon solo los adjuntos que son facturas (vacío si no hay ninguno).\";\nconst MAX_BYTES = 15 * 1024 * 1024; // PDFs que se envían a Claude (el resto solo por nombre)\nconst salida = [];\nconst items = $input.all();\nfor (let i = 0; i < items.length; i++) {\n  const item = items[i];\n  const m = item.json;\n  const pdfs = [];\n  for (const [clave, b] of Object.entries(item.binary || {})) {\n    const nombre = b.fileName || clave;\n    if ((b.mimeType || '').includes('pdf') || nombre.toLowerCase().endsWith('.pdf')) pdfs.push({ clave, nombre });\n  }\n  if (pdfs.length === 0) continue;\n\n  const remitente = m.from?.emailAddress?.address || m.sender?.emailAddress?.address || '';\n  const asunto = m.subject || '';\n  const cuerpo = (m.body?.content || m.bodyPreview || '')\n    .replace(/<style[\\s\\S]*?<\\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ')\n    .replace(/\\s+/g, ' ').trim().slice(0, 4000);\n\n  const contenido = [];\n  let bytes = 0;\n  for (const p of pdfs) {\n    const buf = await this.helpers.getBinaryDataBuffer(i, p.clave);\n    if (bytes + buf.length > MAX_BYTES) continue;\n    bytes += buf.length;\n    contenido.push({ type: 'document', title: p.nombre,\n      source: { type: 'base64', media_type: 'application/pdf', data: buf.toString('base64') } });\n  }\n  contenido.push({ type: 'text', text:\n    `Remitente: ${remitente}\\nAsunto: ${asunto}\\nPDF adjuntos: ${pdfs.map(p => p.nombre).join(', ')}\\n\\nCuerpo del correo:\\n${cuerpo}` });\n\n  salida.push({\n    json: {\n      messageId: m.id, remitente, asunto, pdfs,\n      peticion: { model: 'claude-haiku-5-5', max_tokens: 500, system: SISTEMA,\n                  messages: [{ role: 'user', content: contenido }] },\n    },\n    binary: item.binary,\n    pairedItem: { item: i },\n  });\n}\nreturn salida;\n"
+      },
+      "id": "09ded4da-a6f3-48a2-ace9-4114787103d5",
+      "name": "Preparar clasificación",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.peticion) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "a5f4605e-b46b-4a15-aa52-9c892aa5bc47",
+      "name": "Clasificar con Claude",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        100
+      ],
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "notes": "Credencial Header Auth: nombre x-api-key, valor = API key de Claude",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lee la respuesta de Claude. Si falla o no se entiende → \"dudoso\" (el correo va a Facturas/Revisar).\nconst prep = $('Preparar clasificación').all();\nconst validas = ['factura_nueva', 'reclamacion_o_consulta', 'otro', 'dudoso'];\nreturn $input.all().map((it, i) => {\n  const p = prep[i];\n  let r;\n  try {\n    const texto = (it.json.content || []).filter(c => c.type === 'text').map(c => c.text).join('');\n    r = JSON.parse(texto.slice(texto.indexOf('{'), texto.lastIndexOf('}') + 1));\n  } catch (e) {\n    r = { categoria: 'dudoso', motivo: 'Respuesta de la IA no interpretable: ' + JSON.stringify(it.json).slice(0, 300) };\n  }\n  if (!validas.includes(r.categoria)) r.categoria = 'dudoso';\n  const { peticion, ...datos } = p.json;\n  return {\n    json: { ...datos, categoria: r.categoria, motivo: r.motivo || '',\n            pdfsFactura: Array.isArray(r.pdfs_factura) ? r.pdfs_factura : [] },\n    binary: p.binary,\n    pairedItem: { item: i },\n  };\n});\n"
+      },
+      "id": "ed5e6e83-cefb-463b-99a5-155278246549",
+      "name": "Interpretar respuesta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.categoria }}",
+                    "rightValue": "factura_nueva",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "factura_nueva"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.categoria }}",
+                    "rightValue": "dudoso",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "dudoso"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "otros (se quedan en la bandeja)"
+        }
+      },
+      "id": "720af0a5-ade9-4b6c-9074-d77ecc8853fe",
+      "name": "Según categoría",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        960,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Un item por PDF de factura, con el binario en \"data\" y los datos del correo.\n// Las \"properties\" de Drive admiten 124 bytes por clave+valor: se recortan.\nconst recortar = (s, max) => { let r = s || ''; while (Buffer.byteLength(r, 'utf8') > max) r = r.slice(0, -1); return r; };\nconst out = [];\nconst items = $input.all();\nitems.forEach((it, i) => {\n  const j = it.json;\n  const elegidos = j.pdfs.filter(p => j.pdfsFactura.includes(p.nombre));\n  for (const p of (elegidos.length ? elegidos : j.pdfs)) {\n    out.push({\n      json: { messageId: j.messageId, nombre: p.nombre,\n              remitente: recortar(j.remitente, 110), asunto: recortar(j.asunto, 110),\n              descripcion: `Correo de ${j.remitente}\\nAsunto: ${j.asunto}\\nClasificación: ${j.motivo}` },\n      binary: { data: it.binary[p.clave] },\n      pairedItem: { item: i },\n    });\n  }\n});\nreturn out;\n"
+      },
+      "id": "538d36ca-f47e-41d7-b76f-45a7fda2cd5b",
+      "name": "Un item por PDF",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "name": "={{ $json.nombre }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "",
+          "mode": "id"
+        },
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "id": "35756499-cd77-4577-a27b-e1575852af3a",
+      "name": "Subir a Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1440,
+        0
+      ],
+      "notes": "Poner el id de la carpeta CEFER/Facturas",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $json.id }}?supportsAllDrives=true",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ description: $('Un item por PDF').item.json.descripcion, properties: { remitente: $('Un item por PDF').item.json.remitente, asunto: $('Un item por PDF').item.json.asunto } }) }}",
+        "options": {}
+      },
+      "id": "53302f4d-3d51-42e0-99c7-e289c13954b2",
+      "name": "Guardar remitente y asunto",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1680,
+        0
+      ],
+      "notes": "Misma credencial de Google Drive que el nodo anterior",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Tras subir todos los PDF, un item por correo para moverlo a Facturas/Procesadas.\nconst vistos = new Set();\nreturn $('Un item por PDF').all()\n  .filter(it => !vistos.has(it.json.messageId) && vistos.add(it.json.messageId))\n  .map(it => ({ json: { messageId: it.json.messageId } }));\n"
+      },
+      "id": "f67ccea9-2c21-4a91-8abd-f08a7345b5b9",
+      "name": "Uno por correo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "messageId": {
+          "__rl": true,
+          "value": "={{ $json.messageId }}",
+          "mode": "id"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "Facturas/Procesadas"
+        }
+      },
+      "id": "f533a5d0-b40a-4f06-abee-222ca128e7aa",
+      "name": "Mover a Facturas/Procesadas",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        0
+      ],
+      "notes": "Elegir la carpeta Facturas/Procesadas del buzón",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "messageId": {
+          "__rl": true,
+          "value": "={{ $json.messageId }}",
+          "mode": "id"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "Facturas/Revisar"
+        }
+      },
+      "id": "3b30ee21-8cef-428d-b53f-3e3bbab63d1c",
+      "name": "Mover a Facturas/Revisar",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        200
+      ],
+      "notes": "Elegir la carpeta Facturas/Revisar del buzón",
+      "notesInFlow": true
+    }
+  ],
+  "connections": {
+    "Correo nuevo": {
+      "main": [
+        [
+          {
+            "node": "Preparar clasificación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar clasificación": {
+      "main": [
+        [
+          {
+            "node": "Clasificar con Claude",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clasificar con Claude": {
+      "main": [
+        [
+          {
+            "node": "Interpretar respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Interpretar respuesta": {
+      "main": [
+        [
+          {
+            "node": "Según categoría",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Según categoría": {
+      "main": [
+        [
+          {
+            "node": "Un item por PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mover a Facturas/Revisar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Un item por PDF": {
+      "main": [
+        [
+          {
+            "node": "Subir a Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Subir a Drive": {
+      "main": [
+        [
+          {
+            "node": "Guardar remitente y asunto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar remitente y asunto": {
+      "main": [
+        [
+          {
+            "node": "Uno por correo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Uno por correo": {
+      "main": [
+        [
+          {
+            "node": "Mover a Facturas/Procesadas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  },
+  "pinData": {}
+}

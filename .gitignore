@@ -7,9 +7,14 @@ obj/
 # Config local con credenciales (usar appsettings.example.json como plantilla)
 appsettings.json
 **/appsettings.json
+# Clave de la cuenta de servicio de Google (importador)
+google-service-account.json
+**/google-service-account.json
 
 # Salidas / temporales
 *.tmp
 publish/
+publish-importador/
 *-deploy.zip
-*FacturasCefer-*.zip
+*FacturasCefer*.zip
+*_wpftmp.csproj

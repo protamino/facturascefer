@@ -7,6 +7,7 @@ Propiedades → Detalles del `.exe`. Se define en `src/FacturasCefer/FacturasCef
 
 | Versión | Fecha | Cambios |
 |---|---|---|
+| 1.6.0 | 2026-10-08 | Importación automática desde el correo (servicio `FacturasCefer.Importador`, ver `INSTALACION-IMPORTADOR.md`); filtros Origen y «Solo por revisar», marca ⚑ en facturas y proveedores — requiere `sql/2026-10-08-importador.sql` |
 | 1.5.0 | 2026-10-02 | Desglose de IVA por factura (varios tipos, recargo, cuenta por línea), exportación a a3ASESOR \| con, cuenta contable opcional al subir y filtro de proveedores sin cuenta — requiere `sql/2026-10-02-exportacion-a3.sql` |
 | 1.4.0 | 2026-10-02 | Número de versión visible en la app |
 | 1.3.0 | 2026-10-02 | Cuentas contables (catálogo, cuenta por defecto del proveedor, cuenta por factura) — requiere `sql/2026-10-02-cuentas-contables.sql` |
@@ -82,3 +83,12 @@ dotnet publish src/FacturasCefer/FacturasCefer.csproj -c Release -r win-x64 --se
 
 Después borrar los `*.xml` de `publish\` y comprimir `FacturasCefer.exe` + `appsettings.json` en
 `AAAA-MM-DD-FacturasCefer-X.Y.Z.zip`. Antes de publicar, subir `<Version>` en el `.csproj` y añadir la fila al historial.
+
+Importador (servicio de Windows, ver `INSTALACION-IMPORTADOR.md`):
+
+```bash
+dotnet publish src/FacturasCefer.Importador/FacturasCefer.Importador.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o publish-importador
+```
+
+Comprimir `FacturasCefer.Importador.exe`, `appsettings.example.json` e `instalar-servicio.ps1` en
+`AAAA-MM-DD-FacturasCefer.Importador-X.Y.Z.zip` (sin `appsettings.json` ni `google-service-account.json`).

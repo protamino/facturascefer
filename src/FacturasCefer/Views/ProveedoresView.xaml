@@ -13,6 +13,9 @@
                     <ComboBoxItem Content="Sin ninguna de las dos"/>
                     <ComboBoxItem Content="Sin alguna de las dos"/>
                 </ComboBox>
+                <CheckBox x:Name="ChkPendientes" Content="⚑ Solo altas automáticas por revisar" VerticalAlignment="Center" Margin="0,0,12,0"
+                          ToolTip="Proveedores dados de alta por el importador de correo; se quita la marca al guardar su ficha"
+                          Checked="Filtro_Changed" Unchecked="Filtro_Changed"/>
                 <CheckBox x:Name="ChkBajas" Content="Mostrar bajas" VerticalAlignment="Center" Margin="0,0,12,0"
                           Checked="Filtro_Changed" Unchecked="Filtro_Changed"/>
                 <Button Content="Nuevo…" Style="{StaticResource BotonBarra}" Click="BtnNuevo_Click"/>
@@ -32,6 +35,14 @@
         <DataGrid x:Name="Grid" Style="{StaticResource Tabla}" RowStyle="{StaticResource FilaConBaja}"
                   MouseDoubleClick="Grid_MouseDoubleClick" SelectionChanged="Grid_SelectionChanged">
             <DataGrid.Columns>
+                <DataGridTextColumn Header="⚑" Binding="{Binding AvisoRevision}" Width="28">
+                    <DataGridTextColumn.CellStyle>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="ToolTip" Value="Alta automática desde el correo: revisar y guardar la ficha"/>
+                            <Setter Property="Foreground" Value="#E65100"/>
+                        </Style>
+                    </DataGridTextColumn.CellStyle>
+                </DataGridTextColumn>
                 <DataGridTextColumn Header="Razón social" Binding="{Binding RazonSocial}" Width="2*"/>
                 <DataGridTextColumn Header="CIF" Binding="{Binding CIF}" Width="110"/>
                 <DataGridTextColumn Header="Forma de pago" Binding="{Binding FormaPagoTexto}" Width="110"/>

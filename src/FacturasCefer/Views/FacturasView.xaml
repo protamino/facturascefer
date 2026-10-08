@@ -50,6 +50,17 @@
                 <ComboBoxItem Content="Tarjeta"/>
             </ComboBox>
 
+            <TextBlock Text="Origen:" Style="{StaticResource Filtro}"/>
+            <ComboBox x:Name="CmbOrigen" Width="90" SelectedIndex="0" SelectionChanged="Filtro_Changed"
+                      VerticalContentAlignment="Center">
+                <ComboBoxItem Content="(Todos)"/>
+                <ComboBoxItem Content="Manual"/>
+                <ComboBoxItem Content="Correo"/>
+            </ComboBox>
+            <CheckBox x:Name="ChkRevisar" Content="⚑ Solo por revisar" VerticalAlignment="Center" Margin="10,0,0,0"
+                      ToolTip="Facturas importadas automáticamente que alguien tiene que revisar"
+                      Checked="Filtro_Changed" Unchecked="Filtro_Changed"/>
+
             <TextBlock Text="Cuenta:" Style="{StaticResource Filtro}"/>
             <ComboBox x:Name="CmbCuenta" Width="200" IsEditable="True" IsTextSearchEnabled="True"
                       SelectionChanged="Filtro_Changed" VerticalContentAlignment="Center"/>
@@ -105,6 +116,14 @@
                 </ContextMenu>
             </DataGrid.ContextMenu>
             <DataGrid.Columns>
+                <DataGridTextColumn Header="⚑" Binding="{Binding AvisoRevision}" Width="28">
+                    <DataGridTextColumn.CellStyle>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="ToolTip" Value="{Binding MotivoRevision}"/>
+                            <Setter Property="Foreground" Value="#E65100"/>
+                        </Style>
+                    </DataGridTextColumn.CellStyle>
+                </DataGridTextColumn>
                 <DataGridTextColumn Header="Proveedor" Binding="{Binding Proveedor}" Width="2*"/>
                 <DataGridTextColumn Header="Nº factura" Binding="{Binding NumeroFactura}" Width="120"/>
                 <DataGridTextColumn Header="Concepto" Binding="{Binding Concepto}" Width="2*"/>
@@ -121,6 +140,7 @@
                 <DataGridTextColumn Header="Pago" Binding="{Binding FormaPagoCorta}" Width="60"/>
                 <DataGridTextColumn Header="Cuenta" Binding="{Binding CuentaTexto}" Width="150"/>
                 <DataGridTextColumn Header="Estado" Binding="{Binding EstadoTexto}" Width="115"/>
+                <DataGridTextColumn Header="Origen" Binding="{Binding OrigenTexto}" Width="60"/>
                 <DataGridTextColumn Header="Pagada el" Binding="{Binding FechaPago, StringFormat=dd/MM/yyyy}" Width="85"/>
                 <DataGridTextColumn Header="IBAN" Binding="{Binding AvisoIban}" Width="45">
                     <DataGridTextColumn.CellStyle>

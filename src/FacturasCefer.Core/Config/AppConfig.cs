@@ -27,6 +27,27 @@ public sealed class AppConfig
         public string RutaUnc { get; set; } = "";
     }
 
+    /// <summary>Solo lo usa el importador automático (FacturasCefer.Importador).</summary>
+    public ImportadorCfg Importador { get; set; } = new();
+
+    public sealed class ImportadorCfg
+    {
+        /// <summary>Cada cuántos minutos se revisa la carpeta de Drive.</summary>
+        public int IntervaloMinutos { get; set; } = 5;
+
+        /// <summary>Fichero JSON de la cuenta de servicio de Google (ruta relativa al exe o absoluta).</summary>
+        public string CredencialesGoogle { get; set; } = "google-service-account.json";
+
+        /// <summary>Id de la carpeta de Drive «CEFER/Facturas» (la parte final de su URL).</summary>
+        public string CarpetaEntradaId { get; set; } = "";
+
+        /// <summary>idUsuario de DMSTRA con el que se registran las altas automáticas.</summary>
+        public int IdUsuario { get; set; }
+
+        /// <summary>true = lee y analiza pero NO guarda nada ni mueve ficheros (para pruebas).</summary>
+        public bool Simular { get; set; }
+    }
+
     public sealed class ClaudeCfg
     {
         public string ApiKey { get; set; } = "";
