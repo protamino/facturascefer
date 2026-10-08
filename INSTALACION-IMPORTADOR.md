@@ -64,7 +64,7 @@ Las subcarpetas `Procesadas`, `Duplicadas`, `SinFactura` y `Error` las crea el i
 1. **Workflows → Import from file** → `n8n/2026-10-08-n8n-facturas-correo.json`.
 2. Credenciales:
    - **Microsoft Outlook OAuth2 API**: Client ID y secreto de la app del paso 4 → *Connect* con la cuenta del buzón. Si es buzón compartido, activar *Use Shared Mailbox* e indicar la dirección.
-   - **Header Auth** (nodo «Clasificar con Claude»): Name `x-api-key`, Value = API key de Claude.
+   - **Anthropic** (nodo «Clasificar con Claude», autenticación *Predefined Credential Type → Anthropic*): la credencial de Claude que ya existe en n8n.
    - **Google Drive OAuth2 API** (nodos «Subir a Drive» y «Guardar remitente y asunto»): con un usuario de Google que tenga acceso de edición a CEFER/Facturas. *(No usar aquí la cuenta de servicio: no tiene espacio propio en Drive y la subida falla.)*
 3. Revisar los nodos con nota:
    - «Correo nuevo»: limitar a la bandeja de entrada del buzón de facturas.
