@@ -82,7 +82,7 @@ Los errores técnicos se guardan en `%TEMP%\FacturasCefer\` (`app-error.log`, `l
 ## Generar el paquete (desarrollo)
 
 ```bash
-dotnet publish src/FacturasCefer/FacturasCefer.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o publish
+dotnet publish src/FacturasCefer/FacturasCefer.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o C:FacturasCefer-paquetespublish
 ```
 
 Después borrar los `*.xml` de `publish\` y comprimir `FacturasCefer.exe` + `appsettings.json` en
@@ -91,7 +91,7 @@ Después borrar los `*.xml` de `publish\` y comprimir `FacturasCefer.exe` + `app
 Importador (servicio de Windows, ver `INSTALACION-IMPORTADOR.md`):
 
 ```bash
-dotnet publish src/FacturasCefer.Importador/FacturasCefer.Importador.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o publish-importador
+dotnet publish src/FacturasCefer.Importador/FacturasCefer.Importador.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o C:FacturasCefer-paquetespublish-importador
 ```
 
 Comprimir `FacturasCefer.Importador.exe`, `appsettings.example.json` e `instalar-servicio.ps1` en
