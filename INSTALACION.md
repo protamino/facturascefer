@@ -81,18 +81,21 @@ Los errores técnicos se guardan en `%TEMP%\FacturasCefer\` (`app-error.log`, `l
 
 ## Generar el paquete (desarrollo)
 
+> Los paquetes de la app llevan `appsettings.json` (contraseña de SQL y API key de Claude): se generan y guardan en
+> `C:\FacturasCefer-paquetes\`, **fuera de Dropbox**. No copiarlos a carpetas sincronizadas ni enviarlos por correo.
+
 ```bash
-dotnet publish src/FacturasCefer/FacturasCefer.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o C:FacturasCefer-paquetespublish
+dotnet publish src/FacturasCefer/FacturasCefer.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o C:\FacturasCefer-paquetes\publish
 ```
 
-Después borrar los `*.xml` de `publish\` y comprimir `FacturasCefer.exe` + `appsettings.json` en
-`AAAA-MM-DD-FacturasCefer-X.Y.Z.zip`. Antes de publicar, subir `<Version>` en el `.csproj` y añadir la fila al historial.
+Después borrar los `*.xml` de `C:\FacturasCefer-paquetes\publish\` y comprimir `FacturasCefer.exe` + `appsettings.json` en
+`C:\FacturasCefer-paquetes\AAAA-MM-DD-FacturasCefer-X.Y.Z.zip`. Antes de publicar, subir `<Version>` en el `.csproj` y añadir la fila al historial.
 
 Importador (servicio de Windows, ver `INSTALACION-IMPORTADOR.md`):
 
 ```bash
-dotnet publish src/FacturasCefer.Importador/FacturasCefer.Importador.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o C:FacturasCefer-paquetespublish-importador
+dotnet publish src/FacturasCefer.Importador/FacturasCefer.Importador.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o C:\FacturasCefer-paquetes\publish-importador
 ```
 
 Comprimir `FacturasCefer.Importador.exe`, `appsettings.example.json` e `instalar-servicio.ps1` en
-`AAAA-MM-DD-FacturasCefer.Importador-X.Y.Z.zip` (sin `appsettings.json` ni `google-service-account.json`).
+`C:\FacturasCefer-paquetes\AAAA-MM-DD-FacturasCefer.Importador-X.Y.Z.zip` (sin `appsettings.json` ni `google-service-account.json`).
