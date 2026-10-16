@@ -165,8 +165,27 @@ public partial class SubirFacturasView : UserControl
             return;
         }
 
+        await ComprobarMismoPdfAsync(_pdf);
         await MostrarEnVisorAsync(_pdf.RutaLocal);
         await ExtraerAsync();
+    }
+
+    /// <summary>Avisa si este mismo fichero ya se usó para registrar facturas (copia reenviada, subido dos veces…).</summary>
+    private async Task ComprobarMismoPdfAsync(PdfEnRevision pdf)
+    {
+        try
+        {
+            pdf.Huella = Duplicados.Huella(pdf.RutaLocal);
+            pdf.YaRegistradas.Clear();
+            pdf.YaRegistradas.AddRange(await App.Facturas.FacturasDelMismoPdfAsync(pdf.Huella));
+            if (pdf.YaRegistradas.Count > 0)
+                App.Notificar($"⚠ Este mismo PDF ya se subió antes: {string.Join(", ", pdf.YaRegistradas.Select(f => f.Texto))}. " +
+                              "Si es una copia, descártalo con «Descartar PDF».", TipoAviso.Atencion);
+        }
+        catch (Exception ex)
+        {
+            App.Log("app-error.log", ex); // la comprobación no debe impedir revisar el PDF
+        }
     }
 
     private async Task ExtraerAsync()
@@ -745,6 +764,7 @@ public partial class SubirFacturasView : UserControl
             NombreOriginal = pdf.NombreOriginal,
             JsonExtraccionIA = fr.JsonIa,
             Observaciones = TxtObservaciones.Text,
+            HashPdf = pdf.Huella,
         };
 
         SetOcupado(true, "Guardando la factura…");
@@ -755,6 +775,23 @@ public partial class SubirFacturasView : UserControl
                 Error($"Ya existe la factura nº {numero} de {proveedor.RazonSocial}. Si es una copia, descártala.", TxtNumero);
                 return;
             }
+
+            // Posibles duplicados: mismo PDF subido antes, nº escrito de otra forma, o misma fecha e importe.
+            var avisos = new List<string>();
+            if (pdf.YaRegistradas.Count > 0)
+                avisos.Add("Este mismo PDF ya se usó para registrar: " + string.Join(", ", pdf.YaRegistradas.Select(f => f.Texto)) + ".");
+            var similares = await App.Facturas.PosiblesDuplicadosAsync(proveedor.Id, numero, fecha, total.Value);
+            if (similares.Where(d => d.Fuerte).ToList() is { Count: > 0 } fuertes)
+                avisos.Add($"{proveedor.RazonSocial} ya tiene una factura con el mismo número escrito de otra forma:\n  · " +
+                           string.Join("\n  · ", fuertes.Select(d => d.Texto)));
+            else if (similares.Count > 0)
+                // Solo misma fecha e importe (habitual en facturas periódicas): aviso sin bloquear.
+                App.Notificar($"Para revisar: {proveedor.RazonSocial} ya tiene otra factura del mismo día y del mismo importe " +
+                              $"({string.Join(", ", similares.Select(d => "nº " + d.Numero))}).", TipoAviso.Info);
+            if (avisos.Count > 0 &&
+                !Confirmar("⚠ POSIBLE FACTURA DUPLICADA\n\n" + string.Join("\n\n", avisos) +
+                           "\n\nComprueba que no es la misma factura antes de guardarla.\n\n¿Guardar igualmente?"))
+                return;
             fr.IdFactura = await App.Facturas.GuardarAsync(factura, pdf.RutaLocal, desde, hasta, pdf.Original, App.Usuario.IdUsuario);
             fr.Estado = EstadoRevision.Guardada;
             App.Notificar($"Factura {numero} de {proveedor.RazonSocial} guardada.", TipoAviso.Ok);

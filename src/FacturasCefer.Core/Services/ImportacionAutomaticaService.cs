@@ -52,6 +52,26 @@ public sealed class ImportacionAutomaticaService
         var r = new ResultadoImportacion();
         var prefijo = simular ? "[SIMULACIÓN] " : "";
 
+        // El mismo fichero ya registrado (p. ej. reenviado): no se vuelve a leer con la IA.
+        string huella;
+        try
+        {
+            huella = Duplicados.Huella(rutaPdf);
+            var mismoPdf = await _facturas.FacturasDelMismoPdfAsync(huella, ct);
+            if (mismoPdf.Count > 0)
+            {
+                r.Resultado = ResultadoImportacion.Duplicada;
+                r.Lineas.Add($"{prefijo}Este mismo PDF ya está registrado: {string.Join(", ", mismoPdf.Select(m => m.Texto))}; se omite.");
+                return r;
+            }
+        }
+        catch (Exception ex)
+        {
+            r.Resultado = ResultadoImportacion.Error;
+            r.Lineas.Add($"{prefijo}No se ha podido leer el PDF: {ex.Message}");
+            return r;
+        }
+
         List<FacturaExtraida> facturas;
         int paginas;
         try
@@ -81,7 +101,7 @@ public sealed class ImportacionAutomaticaService
             var etiqueta = facturas.Count > 1 ? $"Factura {i + 1}/{facturas.Count}" : "Factura";
             try
             {
-                var res = await ProcesarFacturaAsync(ia, rutaPdf, paginas, nombreOriginal, remitente, original, idUsuario, simular, ct);
+                var res = await ProcesarFacturaAsync(ia, rutaPdf, huella, paginas, nombreOriginal, remitente, original, idUsuario, simular, ct);
                 r.Lineas.Add($"{prefijo}{etiqueta}: {res.Texto}");
                 switch (res.Tipo)
                 {
@@ -107,7 +127,7 @@ public sealed class ImportacionAutomaticaService
 
     private sealed record ResFactura(TipoRes Tipo, string Texto, int? IdFactura = null);
 
-    private async Task<ResFactura> ProcesarFacturaAsync(FacturaExtraida ia, string rutaPdf, int paginas, string nombreOriginal,
+    private async Task<ResFactura> ProcesarFacturaAsync(FacturaExtraida ia, string rutaPdf, string huella, int paginas, string nombreOriginal,
         string? remitente, OriginalGuardado original, int idUsuario, bool simular, CancellationToken ct)
     {
         var motivos = new List<string>();
@@ -168,6 +188,14 @@ public sealed class ImportacionAutomaticaService
         if (!nuevo && await _facturas.ExisteAsync(proveedor.Id, numero, ct))
             return new(TipoRes.Duplicada, $"ya existe la factura nº {numero} de {proveedor.RazonSocial}; se omite.");
 
+        // Posible duplicado (nº escrito de otra forma, o misma fecha e importe): se registra, pero para revisar.
+        if (!nuevo && ia.Total is { } totalIa)
+        {
+            var similares = await _facturas.PosiblesDuplicadosAsync(proveedor.Id, numero, fecha, totalIa, ct: ct);
+            if (similares.Where(d => d.Fuerte).ToList() is { Count: > 0 } fuertes)
+                motivos.Add("⚠ posible duplicado de " + string.Join(", ", fuertes.Select(d => d.Texto)));
+        }
+
         // ---------- Antifraude IBAN (solo transferencias): nunca se cambia el proveedor automáticamente
         var ibanProveedor = Validaciones.NormalizarIban(proveedor.IBAN);
         if (formaPago == FormaPago.Transferencia && ibanFactura.Length > 0)
@@ -212,6 +240,7 @@ public sealed class ImportacionAutomaticaService
             NombreOriginal = nombreOriginal,
             JsonExtraccionIA = JsonSerializer.Serialize(ia),
             Origen = OrigenFactura.Correo,
+            HashPdf = huella,
             Revisar = motivos.Count > 0,
             MotivoRevision = motivos.Count > 0 ? string.Join("; ", motivos) : null,
             Observaciones = string.IsNullOrWhiteSpace(remitente) ? null : $"Recibida por correo de {remitente}",

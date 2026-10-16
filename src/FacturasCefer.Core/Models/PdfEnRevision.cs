@@ -46,6 +46,12 @@ public sealed class PdfEnRevision
     public int Indice { get; set; }
     public OriginalGuardado Original { get; } = new();
 
+    /// <summary>Huella SHA-256 del PDF (para detectar el mismo fichero subido otra vez).</summary>
+    public string? Huella { get; set; }
+
+    /// <summary>Facturas ya registradas antes a partir de este mismo PDF (al cargarlo).</summary>
+    public List<Services.FacturaMismoPdf> YaRegistradas { get; } = new();
+
     public FacturaEnRevision? Actual => Indice >= 0 && Indice < Facturas.Count ? Facturas[Indice] : null;
     public bool Terminado => Facturas.All(f => f.Estado != EstadoRevision.Pendiente);
 }

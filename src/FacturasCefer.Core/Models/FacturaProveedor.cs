@@ -67,6 +67,9 @@ public sealed class FacturaProveedor
     public bool Revisar { get; set; }
     public string? MotivoRevision { get; set; }
 
+    /// <summary>Huella SHA-256 del PDF subido (se calcula al guardar si no viene).</summary>
+    public string? HashPdf { get; set; }
+
     /// <summary>Desglose de impuestos (al menos una línea). La cabecera se calcula como su suma.</summary>
     public List<FacturaImpuesto> Impuestos { get; set; } = new();
 }

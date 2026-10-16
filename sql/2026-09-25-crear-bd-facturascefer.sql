@@ -87,6 +87,7 @@ CREATE TABLE dbo.FacturaProveedores (
                        CONSTRAINT CK_Factura_Origen CHECK (Origen IN (1, 2)),   -- 1 Manual, 2 Correo (importador)
     Revisar            bit               NOT NULL CONSTRAINT DF_Factura_Revisar DEFAULT (0),
     MotivoRevision     nvarchar(500)     NULL,
+    HashPdf            char(64)          NULL,   -- SHA-256 del PDF subido (detección de PDF repetido)
     FechaRegistro      datetime2(0)      NOT NULL CONSTRAINT DF_Factura_FechaRegistro DEFAULT (SYSDATETIME()),
     IdUsuarioRegistro  int               NOT NULL,
     CONSTRAINT UQ_Factura_Proveedor_Numero UNIQUE (IdProveedor, NumeroFactura)
@@ -187,6 +188,27 @@ GO
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Historico_Factura')
     CREATE INDEX IX_Historico_Factura ON dbo.FacturaEstadoHistorico (IdFactura);
+GO
+
+/* ---------- FacturaCambio (auditoría de cambios de datos) ---------- */
+IF OBJECT_ID(N'dbo.FacturaCambio', N'U') IS NULL
+CREATE TABLE dbo.FacturaCambio (
+    Id              int IDENTITY(1,1) NOT NULL CONSTRAINT PK_FacturaCambio PRIMARY KEY,
+    IdFactura       int               NOT NULL CONSTRAINT FK_FacturaCambio_Factura REFERENCES dbo.FacturaProveedores(Id),
+    Fecha           datetime2(0)      NOT NULL CONSTRAINT DF_FacturaCambio_Fecha DEFAULT (SYSDATETIME()),
+    IdUsuario       int               NOT NULL,
+    Campo           nvarchar(60)      NOT NULL,
+    ValorAnterior   nvarchar(400)     NULL,
+    ValorNuevo      nvarchar(400)     NULL
+);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_FacturaCambio_Factura')
+    CREATE INDEX IX_FacturaCambio_Factura ON dbo.FacturaCambio (IdFactura, Fecha DESC);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Factura_HashPdf')
+    CREATE INDEX IX_Factura_HashPdf ON dbo.FacturaProveedores (HashPdf) WHERE HashPdf IS NOT NULL;
 GO
 
 /* ---------- ProveedorIbanHistorico ---------- */

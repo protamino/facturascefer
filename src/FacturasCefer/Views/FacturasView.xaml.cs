@@ -312,7 +312,7 @@ public partial class FacturasView : UserControl
         if (dlg.ShowDialog() != true || dlg.Codigo is null) return;
         try
         {
-            await App.Facturas.AsignarCuentaAsync(sel.Select(f => f.Id), dlg.Codigo);
+            await App.Facturas.AsignarCuentaAsync(sel.Select(f => f.Id), dlg.Codigo, App.Usuario.IdUsuario);
         }
         catch (Exception ex)
         {

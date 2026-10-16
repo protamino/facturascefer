@@ -83,6 +83,9 @@ public sealed class FacturaListado
     public string AvisoIban => IbanDistinto ? "⚠" : "";
 }
 
+/// <summary>Línea del historial de una factura: cambio de estado o cambio de datos.</summary>
+public sealed record EventoHistorial(DateTime Fecha, string Cambio, string Usuario, string? Comentario);
+
 /// <summary>Fila de dbo.FacturaEstadoHistorico con el nombre del usuario.</summary>
 public sealed record CambioEstado(DateTime Fecha, EstadoFactura? EstadoAnterior, EstadoFactura EstadoNuevo,
     string Usuario, string? Comentario)

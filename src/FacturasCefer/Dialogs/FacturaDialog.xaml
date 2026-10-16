@@ -39,11 +39,12 @@
 
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*" MinHeight="120"/>
+                <RowDefinition Height="*" MinHeight="200"/>
+                <RowDefinition Height="190"/>
             </Grid.RowDefinitions>
 
-            <StackPanel x:Name="Formulario" Grid.Row="0">
+            <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" Padding="0,0,6,0">
+            <StackPanel x:Name="Formulario">
                 <TextBlock Text="Factura" Style="{StaticResource Seccion}"/>
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -120,9 +121,10 @@
                 <TextBox x:Name="TxtObservaciones" Height="50" AcceptsReturn="True" TextWrapping="Wrap"
                          VerticalContentAlignment="Top"/>
             </StackPanel>
+            </ScrollViewer>
 
             <DockPanel Grid.Row="1">
-                <TextBlock DockPanel.Dock="Top" Text="Historial de estados" Style="{StaticResource Seccion}"/>
+                <TextBlock DockPanel.Dock="Top" Text="Historial (estados y cambios de datos)" Style="{StaticResource Seccion}"/>
                 <DataGrid x:Name="GridHistorial" Style="{StaticResource Tabla}">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Fecha" Binding="{Binding Fecha, StringFormat=dd/MM/yyyy HH:mm}" Width="120"/>

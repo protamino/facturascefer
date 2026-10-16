@@ -27,7 +27,7 @@ public partial class FacturaDialog : Window
     {
         try
         {
-            await App.Facturas.MarcarRevisadaAsync(_id);
+            await App.Facturas.MarcarRevisadaAsync(_id, App.Usuario.IdUsuario);
             PanelRevisar.Visibility = Visibility.Collapsed;
             Modificada = true;
         }
@@ -125,7 +125,7 @@ public partial class FacturaDialog : Window
             BtnGuardar.IsEnabled = false;
             try
             {
-                await App.Facturas.AsignarCuentaAsync(new[] { _f.Id }, SelCuenta.Codigo);
+                await App.Facturas.AsignarCuentaAsync(new[] { _f.Id }, SelCuenta.Codigo, App.Usuario.IdUsuario);
                 Modificada = true;
                 DialogResult = true;
             }
@@ -156,12 +156,29 @@ public partial class FacturaDialog : Window
             !Confirmar($"Bases + IVA + RE − IRPF = {Formato.Importe(calculado)} €, pero el total es {Formato.Importe(total)} €.\n\n¿Guardar igualmente?"))
             return;
 
+        // Antifraude: cambiar la cuenta a la que se paga una factura se confirma explícitamente.
+        var formaPago = (FormaPago)(Math.Max(CmbFormaPago.SelectedIndex, 0) + 1);
+        var ibanAnterior = Validaciones.NormalizarIban(_f.IBAN);
+        if (formaPago == FormaPago.Transferencia && iban != ibanAnterior &&
+            MessageBox.Show(this,
+                "⚠ Vas a CAMBIAR la cuenta a la que se pagará esta factura:\n\n" +
+                $"  Antes:  {(ibanAnterior.Length == 0 ? "(sin IBAN)" : Validaciones.FormatearIban(ibanAnterior))}\n" +
+                $"  Ahora:  {(iban.Length == 0 ? "(sin IBAN)" : Validaciones.FormatearIban(iban))}\n" +
+                (Validaciones.NormalizarIban(_f.IbanProveedor) is { Length: > 0 } ip && ip != iban
+                    ? $"  (El proveedor tiene registrado: {Validaciones.FormatearIban(ip)})\n"
+                    : "") +
+                "\nLos cambios de cuenta bancaria son el fraude más habitual con facturas. Confírmalo con el proveedor " +
+                "llamando a un teléfono que ya conozcas (no al que venga en el correo o en la factura).\n\n" +
+                "El cambio quedará registrado con tu usuario. ¿Cambiar el IBAN?",
+                "Cambio de IBAN", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes)
+            return;
+
         var f = _f;
         f.NumeroFactura = numero;
         f.FechaFactura = fecha;
         f.FechaVencimiento = DpVencimiento.SelectedDate;
         f.IBAN = iban.Length > 0 ? iban : null;
-        f.FormaPago = (FormaPago)(Math.Max(CmbFormaPago.SelectedIndex, 0) + 1);
+        f.FormaPago = formaPago;
         f.Tarjeta = f.FormaPago == FormaPago.Tarjeta ? Validaciones.EnmascararTarjeta(TxtTarjeta.Text) : null;
         f.Concepto = TxtConcepto.Text.Trim();
         f.PorcIRPF = pirpf;
@@ -173,7 +190,7 @@ public partial class FacturaDialog : Window
         BtnGuardar.IsEnabled = false;
         try
         {
-            await App.Facturas.ActualizarAsync(f, lineas);
+            await App.Facturas.ActualizarAsync(f, lineas, App.Usuario.IdUsuario);
             Modificada = true;
             DialogResult = true;
         }

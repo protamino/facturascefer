@@ -166,6 +166,20 @@ Detalle de instalación y operación en `INSTALACION-IMPORTADOR.md`.
 - En el listado: columna «Días» (hace N d / hoy / en N d), filas en ámbar si vencen en ≤ 7 días y en rojo si están vencidas,
   filtro «Vencimiento» (vencidas / vencen en ≤ 7 días / ambas).
 
+## 4 quinquies. Auditoría y duplicados
+
+- **Auditoría:** cada dato que cambia en una factura (nº, fechas, concepto, forma de pago, IBAN, tarjeta, cuenta, desglose,
+  IRPF, total, observaciones, marcar como revisada) queda en `FacturaCambio` con usuario, fecha y valor anterior → nuevo.
+  La ficha muestra un historial único con los cambios de estado y los de datos.
+- **Antifraude:** cambiar el IBAN de pago de una factura desde la ficha pide confirmación explícita (como en el proveedor).
+- **Duplicados:**
+  - Mismo PDF (huella SHA-256 en `FacturaProveedores.HashPdf`): aviso al subirlo a mano y confirmación al guardar;
+    el importador lo marca como duplicado **sin llamar a la IA**.
+  - Mismo nº escrito de otra forma (separadores, mayúsculas, ceros a la izquierda: `F-001` = `F001`, `2026/087` = `2026-87`):
+    confirmación al guardar a mano; el importador la registra con ⚑ «posible duplicado».
+  - Misma fecha y mismo importe del mismo proveedor: solo aviso informativo (es normal en facturas periódicas).
+  - El nº exacto repetido sigue bloqueado (índice único proveedor + nº).
+
 ## 5. Listado de facturas
 
 - Tabla: proveedor, nº factura, fecha, vencimiento, base, IVA, total, estado, fecha de pago.
