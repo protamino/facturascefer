@@ -58,6 +58,18 @@ public partial class ProveedoresView : UserControl
         }
     }
 
+    private void BtnExcel_Click(object sender, RoutedEventArgs e) =>
+        Services.ExportarExcel.Exportar(Grid, "proveedores", Window.GetWindow(this));
+
+    /// <summary>Muestra solo las altas automáticas pendientes de revisar (desde Inicio).</summary>
+    public void MostrarPendientesRevision()
+    {
+        ChkBajas.IsChecked = false;
+        CmbCuentas.SelectedIndex = 0;
+        TxtBuscar.Text = "";
+        ChkPendientes.IsChecked = true; // dispara la recarga
+    }
+
     private void ActualizarBotones()
     {
         var p = Seleccionado;

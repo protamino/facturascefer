@@ -23,6 +23,15 @@ public sealed class Proveedor
     /// <summary>Cuenta contable del proveedor (400xxxxx) para la exportación a a3ASESOR.</summary>
     public string? CuentaProveedor { get; set; }
 
+    /// <summary>
+    /// Días desde la fecha de factura hasta el vencimiento. Se usa para calcular el vencimiento cuando la factura
+    /// no lo indica (null = sin plazo habitual).
+    /// </summary>
+    public int? DiasPago { get; set; }
+
+    /// <summary>Vencimiento por defecto de una factura de este proveedor con esa fecha.</summary>
+    public DateTime? VencimientoPorDefecto(DateTime fechaFactura) => DiasPago is { } d ? fechaFactura.Date.AddDays(d) : null;
+
     /// <summary>Dado de alta automáticamente por el importador; se quita al guardar su ficha.</summary>
     public bool PendienteRevision { get; set; }
     public string AvisoRevision => PendienteRevision ? "⚑" : "";

@@ -16,6 +16,7 @@
             <Button x:Name="BtnHistIban" Content="Historial IBAN" Click="BtnHistIban_Click"/>
             <Button x:Name="BtnFacturas" Content="Ver facturas" Click="BtnFacturas_Click"/>
             <Button Content="Actualizar" Click="BtnActualizar_Click"/>
+            <Button Content="⤓ Excel…" Click="BtnExcel_Click" ToolTip="Exportar la lista actual a Excel"/>
         </WrapPanel>
 
         <!-- Filtros -->
@@ -58,6 +59,7 @@
                 <DataGridTextColumn Header="Razón social" Binding="{Binding RazonSocial}" Width="2*" MinWidth="200"/>
                 <DataGridTextColumn Header="CIF" Binding="{Binding CIF}" Width="110" MinWidth="110"/>
                 <DataGridTextColumn Header="Forma de pago" Binding="{Binding FormaPagoTexto}" Width="110" MinWidth="110"/>
+                <DataGridTextColumn Header="Plazo" Binding="{Binding DiasPago, StringFormat={}{0} d}" Width="60" MinWidth="60"/>
                 <DataGridTextColumn Header="Cta. gasto" Binding="{Binding CuentaContable}" Width="85" MinWidth="85"/>
                 <DataGridTextColumn Header="Cta. proveedor" Binding="{Binding CuentaProveedor}" Width="95" MinWidth="95"/>
                 <DataGridTextColumn Header="IBAN" Binding="{Binding IbanFormateado}" Width="250" MinWidth="250"/>

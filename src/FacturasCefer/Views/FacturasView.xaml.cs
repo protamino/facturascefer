@@ -45,6 +45,60 @@ public partial class FacturasView : UserControl
 
     private List<FacturaListado> Seleccionadas => Grid.SelectedItems.Cast<FacturaListado>().ToList();
 
+    /// <summary>Vistas predefinidas (desde las tarjetas de Inicio).</summary>
+    public enum VistaRapida { Pendientes, Vencidas, VencenPronto, VencidasOPronto, MesActual, PorRevisar, SinCuenta }
+
+    /// <summary>Deja los filtros en una vista predefinida.</summary>
+    /// <remarks>Llamar antes de mostrar la sección: la carga la hace el refresco al hacerse visible.</remarks>
+    public async Task AplicarVistaAsync(VistaRapida vista)
+    {
+        _cargandoProveedores = true;
+        RestablecerFiltros();
+        switch (vista)
+        {
+            case VistaRapida.Vencidas:
+                CmbVencimiento.SelectedIndex = (int)FiltroVencimiento.Vencidas;
+                break;
+            case VistaRapida.VencenPronto:
+                CmbVencimiento.SelectedIndex = (int)FiltroVencimiento.VencenPronto;
+                break;
+            case VistaRapida.VencidasOPronto:
+                CmbVencimiento.SelectedIndex = (int)FiltroVencimiento.VencidasOPronto;
+                break;
+            case VistaRapida.MesActual:
+                ChkPagada.IsChecked = true;
+                DpDesde.SelectedDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+                break;
+            case VistaRapida.PorRevisar:
+                ChkPagada.IsChecked = true;
+                ChkRevisar.IsChecked = true;
+                break;
+            case VistaRapida.SinCuenta:
+                ChkPagada.IsChecked = true;
+                CmbCuenta.SelectedIndex = 1; // (Sin cuenta)
+                break;
+        }
+        _cargandoProveedores = false;
+        _debounce.Stop();
+        if (IsVisible) await CargarAsync();
+    }
+
+    /// <summary>Filtros por defecto: pendientes de pago, sin más criterios.</summary>
+    private void RestablecerFiltros()
+    {
+        ChkRecibida.IsChecked = ChkValidada.IsChecked = true;
+        ChkPagada.IsChecked = ChkRechazada.IsChecked = false;
+        if (CmbProveedor.Items.Count > 0) CmbProveedor.SelectedIndex = 0;
+        CmbFormaPago.SelectedIndex = 0;
+        CmbVencimiento.SelectedIndex = 0;
+        if (CmbCuenta.Items.Count > 0) CmbCuenta.SelectedIndex = 0;
+        CmbOrigen.SelectedIndex = 0;
+        ChkRevisar.IsChecked = false;
+        CmbCampoFecha.SelectedIndex = 0;
+        DpDesde.SelectedDate = DpHasta.SelectedDate = null;
+        TxtBuscar.Text = "";
+    }
+
     /// <summary>Muestra todas las facturas de un proveedor (desde la pestaña Proveedores).</summary>
     /// <remarks>Llamar antes de mostrar la pestaña: la carga la hace el refresco al hacerse visible.</remarks>
     public async Task FiltrarPorProveedorAsync(int idProveedor)
@@ -54,6 +108,7 @@ public partial class FacturasView : UserControl
         ChkRecibida.IsChecked = ChkValidada.IsChecked = ChkPagada.IsChecked = ChkRechazada.IsChecked = true;
         DpDesde.SelectedDate = DpHasta.SelectedDate = null;
         CmbFormaPago.SelectedIndex = 0;
+        CmbVencimiento.SelectedIndex = 0;
         CmbCuenta.SelectedIndex = 0;
         CmbOrigen.SelectedIndex = 0;
         ChkRevisar.IsChecked = false;
@@ -107,6 +162,7 @@ public partial class FacturasView : UserControl
             FormaPago = CmbFormaPago.SelectedIndex > 0 ? (FormaPago)CmbFormaPago.SelectedIndex : null,
             CuentaContable = (CmbCuenta.SelectedItem as OpcionCuenta)?.Codigo,
             Origen = CmbOrigen.SelectedIndex > 0 ? (OrigenFactura)CmbOrigen.SelectedIndex : null,
+            Vencimiento = (FiltroVencimiento)Math.Max(0, CmbVencimiento.SelectedIndex),
             SoloRevisar = ChkRevisar.IsChecked == true,
             Texto = TxtBuscar.Text,
             PorVencimiento = CmbCampoFecha.SelectedIndex == 1,
@@ -135,8 +191,10 @@ public partial class FacturasView : UserControl
             Estado.Vacio = lista.Count == 0;
             var vencidas = lista.Count(f => f.Vencida);
             var revisar = lista.Count(f => f.Revisar);
+            var pronto = lista.Count(f => f.VencePronto);
             TxtResumen.Text = $"{lista.Count} factura(s)   ·   Total: {Formato.Importe(lista.Sum(f => f.Total))} €" +
                               (vencidas > 0 ? $"   ·   ⚠ {vencidas} vencida(s) sin pagar" : "") +
+                              (pronto > 0 ? $"   ·   ⏰ {pronto} vence(n) en ≤ {FacturaListado.DiasAvisoVencimiento} días" : "") +
                               (revisar > 0 ? $"   ·   ⚑ {revisar} por revisar" : "");
         }
         catch (Exception ex)
@@ -162,22 +220,16 @@ public partial class FacturasView : UserControl
     private void BtnLimpiar_Click(object sender, RoutedEventArgs e)
     {
         _cargandoProveedores = true;
-        ChkRecibida.IsChecked = ChkValidada.IsChecked = true;
-        ChkPagada.IsChecked = ChkRechazada.IsChecked = false;
-        CmbProveedor.SelectedIndex = 0;
-        CmbFormaPago.SelectedIndex = 0;
-        CmbCuenta.SelectedIndex = 0;
-        CmbOrigen.SelectedIndex = 0;
-        ChkRevisar.IsChecked = false;
-        CmbCampoFecha.SelectedIndex = 0;
-        DpDesde.SelectedDate = DpHasta.SelectedDate = null;
-        TxtBuscar.Text = "";
+        RestablecerFiltros();
         _cargandoProveedores = false;
         _debounce.Stop();
         _ = CargarAsync();
     }
 
     private void BtnActualizar_Click(object sender, RoutedEventArgs e) => _ = CargarAsync();
+
+    private void BtnExcel_Click(object sender, RoutedEventArgs e) =>
+        ExportarExcel.Exportar(Grid, "facturas", Window.GetWindow(this));
 
     // ------------------------------------------------------------------ Selección y botones
 

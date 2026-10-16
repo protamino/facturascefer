@@ -384,6 +384,12 @@ public partial class SubirFacturasView : UserControl
         {
             PanelProveedor.Style = Tema.EstiloAviso(p.Baja ? TipoAviso.Atencion : TipoAviso.Ok);
             TxtProveedor.Text = $"✔ {p.RazonSocial} ({p.CIF})" + (p.Baja ? " — DADO DE BAJA" : "");
+            // Sin vencimiento en la factura: se propone el plazo habitual del proveedor.
+            if (DpVencimiento.SelectedDate is null && DpFecha.SelectedDate is { } ff && p.VencimientoPorDefecto(ff) is { } vto)
+            {
+                DpVencimiento.SelectedDate = vto;
+                TxtProveedor.Text += $"\nVencimiento calculado con su plazo habitual ({p.DiasPago} días).";
+            }
             BtnAltaProveedor.Visibility = Visibility.Collapsed;
         }
         else

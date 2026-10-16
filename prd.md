@@ -152,10 +152,25 @@ Detalle de instalación y operación en `INSTALACION-IMPORTADOR.md`.
 - En la app: filtro **Origen** (manual / correo) y **«Solo por revisar»**; la ficha muestra el motivo y «Marcar como revisada»
   (validar la factura también la marca como revisada).
 
+## 4 ter. Inicio (panel de control)
+
+- Tarjetas: pendiente de pagar (importe y nº), vencidas sin pagar, vencen en ≤ 7 días, gasto del mes (con el anterior),
+  ⚑ facturas por revisar, sin cuenta contable, proveedores nuevos por revisar, importador (incidencias en 24 h, último latido).
+  Cada tarjeta abre el listado correspondiente ya filtrado.
+- Próximos pagos (vencidas y que vencen en ≤ 7 días) y gasto de los últimos 6 meses.
+- Aviso destacado si el servicio importador lleva más de 30 min sin revisar Drive o su última pasada falló.
+
+## 4 quater. Vencimientos
+
+- Proveedor.DiasPago (plazo habitual): si la factura no trae vencimiento, se calcula fecha + días (subida manual e importador).
+- En el listado: columna «Días» (hace N d / hoy / en N d), filas en ámbar si vencen en ≤ 7 días y en rojo si están vencidas,
+  filtro «Vencimiento» (vencidas / vencen en ≤ 7 días / ambas).
+
 ## 5. Listado de facturas
 
 - Tabla: proveedor, nº factura, fecha, vencimiento, base, IVA, total, estado, fecha de pago.
-- **Filtros:** estado, proveedor, forma de pago, cuenta contable (o sin cuenta), origen (manual / correo), pendientes de revisar, rango de fechas (factura o vencimiento), texto libre.
+- **Filtros:** estado, proveedor, forma de pago, vencimiento, cuenta contable (o sin cuenta), origen (manual / correo), pendientes de revisar, rango de fechas (factura o vencimiento), texto libre.
+- **Exportar a Excel** el listado tal como se ve (también proveedores e importaciones).
 - Orden por cualquier columna. Por defecto: fecha de factura descendente.
 - **Resaltado** de facturas vencidas y no pagadas.
 - Pie con **nº de facturas y suma de totales** del filtro.

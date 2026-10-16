@@ -9,7 +9,7 @@
     <RootNamespace>FacturasCefer</RootNamespace>
     <AssemblyName>FacturasCefer</AssemblyName>
     <!-- Versión: subir en cada entrega (MENOR = funciones nuevas, REVISIÓN = correcciones). Historial en INSTALACION.md -->
-    <Version>1.7.0</Version>
+    <Version>1.8.0</Version>
     <Product>FacturasCefer</Product>
     <Company>Instituto de Reproducción CEFER</Company>
     <Description>Registro de facturas de proveedores</Description>
@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <!-- Lógica compartida con el importador automático (servicios, modelos, IA, PDF, exportación A3). -->
+    <PackageReference Include="ClosedXML" Version="0.102.3" />
     <ProjectReference Include="..\FacturasCefer.Core\FacturasCefer.Core.csproj" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
   </ItemGroup>

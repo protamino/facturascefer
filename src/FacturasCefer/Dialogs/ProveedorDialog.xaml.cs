@@ -40,6 +40,7 @@ public partial class ProveedorDialog : Window
         TxtTarjeta.Text = p.Tarjeta;
         SelCuenta.Codigo = p.CuentaContable;
         TxtCuentaProveedor.Text = p.CuentaProveedor;
+        TxtDiasPago.Text = p.DiasPago?.ToString() ?? "";
         TxtDireccion.Text = p.Direccion;
         TxtCp.Text = p.CP;
         TxtPoblacion.Text = p.Poblacion;
@@ -64,6 +65,16 @@ public partial class ProveedorDialog : Window
         if (iban.Length > 0 && !Validaciones.IbanValido(iban)) { Error("El IBAN no es válido (revisa los dígitos).", TxtIban); return; }
         var cuentaProveedor = TxtCuentaProveedor.Text.Trim();
         if (cuentaProveedor.Length > 0 && !Validaciones.CuentaValida(cuentaProveedor)) { Error("La cuenta del proveedor debe tener exactamente 8 dígitos.", TxtCuentaProveedor); return; }
+        int? diasPago = null;
+        if (TxtDiasPago.Text.Trim().Length > 0)
+        {
+            if (!int.TryParse(TxtDiasPago.Text.Trim(), out var dp) || dp < 0 || dp > 365)
+            {
+                Error("El plazo de pago debe ser un número de días entre 0 y 365 (o vacío).", TxtDiasPago);
+                return;
+            }
+            diasPago = dp;
+        }
         if (!SelCuenta.EsValido) { Error("La cuenta contable no existe: elígela de la lista o dala de alta con «…».", SelCuenta); return; }
 
         // Proveedores extranjeros pueden no tener CIF español: aviso, no bloqueo.
@@ -89,6 +100,7 @@ public partial class ProveedorDialog : Window
         _p.FormaPago = FormaPagoSeleccionada;
         _p.CuentaContable = SelCuenta.Codigo;
         _p.CuentaProveedor = cuentaProveedor.Length > 0 ? cuentaProveedor : null;
+        _p.DiasPago = diasPago;
         _p.Tarjeta = _p.FormaPago == FormaPago.Tarjeta ? Validaciones.EnmascararTarjeta(TxtTarjeta.Text) : null;
         _p.Direccion = TxtDireccion.Text;
         _p.CP = TxtCp.Text;

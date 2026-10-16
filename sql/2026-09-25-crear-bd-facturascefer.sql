@@ -41,6 +41,7 @@ CREATE TABLE dbo.Proveedor (
     CuentaContable char(8)           NULL CONSTRAINT FK_Proveedor_CuentaContable REFERENCES dbo.CuentaContable(Codigo), -- por defecto
     CuentaProveedor char(8)          NULL,  -- cuenta contable del proveedor (400xxxxx) para la exportación a A3
     PendienteRevision bit            NOT NULL CONSTRAINT DF_Proveedor_PendienteRevision DEFAULT (0), -- alta automática sin revisar
+    DiasPago       smallint          NULL CONSTRAINT CK_Proveedor_DiasPago CHECK (DiasPago BETWEEN 0 AND 365), -- vencimiento por defecto
     Email          nvarchar(150)     NULL,
     Telefono       varchar(30)       NULL,
     Observaciones  nvarchar(max)     NULL,
@@ -149,6 +150,23 @@ CREATE TABLE dbo.FacturaImportacion (
 );
 GO
 
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_FacturaImportacion_Fecha')
+    CREATE INDEX IX_FacturaImportacion_Fecha ON dbo.FacturaImportacion (Fecha DESC) INCLUDE (Resultado);
+GO
+
+/* ---------- ImportadorEstado (latido del servicio importador: una sola fila) ---------- */
+IF OBJECT_ID(N'dbo.ImportadorEstado', N'U') IS NULL
+CREATE TABLE dbo.ImportadorEstado (
+    Id               tinyint        NOT NULL CONSTRAINT PK_ImportadorEstado PRIMARY KEY
+                                             CONSTRAINT CK_ImportadorEstado_Id CHECK (Id = 1),
+    UltimaPasada     datetime2(0)   NOT NULL,
+    Correcta         bit            NOT NULL,
+    Mensaje          nvarchar(500)  NULL,
+    Equipo           nvarchar(100)  NULL,
+    Version          varchar(20)    NULL
+);
+GO
+
 /* ---------- FacturaEstadoHistorico ---------- */
 IF OBJECT_ID(N'dbo.FacturaEstadoHistorico', N'U') IS NULL
 CREATE TABLE dbo.FacturaEstadoHistorico (
@@ -160,6 +178,11 @@ CREATE TABLE dbo.FacturaEstadoHistorico (
     IdUsuario       int               NOT NULL,
     Comentario      nvarchar(500)     NULL
 );
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Factura_Vencimiento')
+    CREATE INDEX IX_Factura_Vencimiento ON dbo.FacturaProveedores (FechaVencimiento)
+        INCLUDE (Estado, Total) WHERE Estado IN (1, 2);
 GO
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Historico_Factura')

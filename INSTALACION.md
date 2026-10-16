@@ -7,6 +7,7 @@ Propiedades → Detalles del `.exe`. Se define en `src/FacturasCefer/FacturasCef
 
 | Versión | Fecha | Cambios |
 |---|---|---|
+| 1.8.0 | 2026-10-16 | Inicio (cifras, próximos pagos, gasto por mes), filtro y aviso de vencimientos (≤ 7 días), plazo de pago por proveedor, pantalla Importaciones con estado del servicio, exportar a Excel — requiere `sql/2026-10-16-inicio-vencimientos-importador.sql` y el importador 1.8.0 |
 | 1.7.0 | 2026-10-16 | Nuevo diseño con los colores de BANCOSEMEN (barra lateral, estados en pastillas, pantalla de acceso), indicador de carga y mensaje de lista vacía, avisos no bloqueantes, registro de errores acumulativo |
 | 1.6.0 | 2026-10-08 | Importación automática desde el correo (servicio `FacturasCefer.Importador`, ver `INSTALACION-IMPORTADOR.md`); filtros Origen y «Solo por revisar», marca ⚑ en facturas y proveedores — requiere `sql/2026-10-08-importador.sql` |
 | 1.5.0 | 2026-10-02 | Desglose de IVA por factura (varios tipos, recargo, cuenta por línea), exportación a a3ASESOR \| con, cuenta contable opcional al subir y filtro de proveedores sin cuenta — requiere `sql/2026-10-02-exportacion-a3.sql` |

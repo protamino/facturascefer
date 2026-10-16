@@ -36,7 +36,8 @@ public sealed class ImportadorWorker : BackgroundService
         {
             try
             {
-                await UnaPasadaAsync(ct);
+                var n = await UnaPasadaAsync(ct);
+                await LatidoAsync(true, n == 0 ? "Sin PDF nuevos" : $"{n} PDF procesado(s)", ct);
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
@@ -45,8 +46,27 @@ public sealed class ImportadorWorker : BackgroundService
             catch (Exception ex)
             {
                 _log.LogError(ex, "Error revisando la carpeta de Drive");
+                await LatidoAsync(false, ex.Message, ct);
             }
             await Task.Delay(TimeSpan.FromMinutes(Math.Max(1, _cfg.Importador.IntervaloMinutos)), ct);
+        }
+    }
+
+    /// <summary>
+    /// Deja constancia en la BD (dbo.ImportadorEstado) de que el servicio sigue funcionando: la app avisa si pasa
+    /// demasiado tiempo sin latido. Un fallo aquí no debe parar el servicio.
+    /// </summary>
+    private async Task LatidoAsync(bool correcta, string mensaje, CancellationToken ct)
+    {
+        if (_cfg.Importador.Simular) return;
+        try
+        {
+            var v = typeof(ImportadorWorker).Assembly.GetName().Version;
+            await _registro.RegistrarLatidoAsync(correcta, mensaje, v is null ? "?" : $"{v.Major}.{v.Minor}.{v.Build}", ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _log.LogWarning(ex, "No se ha podido registrar el latido del importador");
         }
     }
 

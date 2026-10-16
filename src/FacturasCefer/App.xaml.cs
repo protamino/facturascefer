@@ -18,6 +18,8 @@ public partial class App : Application
     public static FacturaService Facturas { get; private set; } = null!;
     public static ExtraccionService Extraccion { get; private set; } = null!;
     public static CuentaContableService Cuentas { get; private set; } = null!;
+    public static ImportacionRepository Importaciones { get; private set; } = null!;
+    public static ResumenService Resumen { get; private set; } = null!;
     public static Exportacion.A3.A3ExportService ExportacionA3 { get; private set; } = null!;
     public static Usuario Usuario { get; private set; } = null!;
 
@@ -65,6 +67,8 @@ public partial class App : Application
         Facturas = new FacturaService(Config);
         Extraccion = new ExtraccionService(Config);
         Cuentas = new CuentaContableService(Config);
+        Importaciones = new ImportacionRepository(Config);
+        Resumen = new ResumenService(Config, Facturas, Importaciones);
         ExportacionA3 = new Exportacion.A3.A3ExportService(new Exportacion.A3.A3ExportRepository(Config));
 
         var login = new LoginWindow();

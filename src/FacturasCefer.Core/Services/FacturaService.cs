@@ -299,6 +299,9 @@ public sealed class FacturaService
               AND (@cta IS NULL OR (@cta = '' AND f.CuentaContable IS NULL) OR f.CuentaContable = @cta)
               AND (@orig IS NULL OR f.Origen = @orig)
               AND (@solorev = 0 OR f.Revisar = 1)
+              AND (@venc = 0 OR (f.Estado IN (1, 2) AND f.FechaVencimiento IS NOT NULL AND (
+                       (@venc IN (1, 3) AND f.FechaVencimiento < @hoy)
+                    OR (@venc IN (2, 3) AND f.FechaVencimiento BETWEEN @hoy AND @limite))))
               AND (@desde IS NULL OR {campoFecha} >= @desde)
               AND (@hasta IS NULL OR {campoFecha} <= @hasta)
               AND (@t IS NULL OR f.NumeroFactura LIKE '%' + @t + '%' OR f.Concepto LIKE '%' + @t + '%'
@@ -309,6 +312,9 @@ public sealed class FacturaService
         cmd.Parameters.AddWithValue("@cta", (object?)filtro.CuentaContable ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@orig", filtro.Origen is { } o ? (byte)o : DBNull.Value);
         cmd.Parameters.AddWithValue("@solorev", filtro.SoloRevisar);
+        cmd.Parameters.AddWithValue("@venc", (int)filtro.Vencimiento);
+        cmd.Parameters.Add("@hoy", System.Data.SqlDbType.Date).Value = DateTime.Today;
+        cmd.Parameters.Add("@limite", System.Data.SqlDbType.Date).Value = DateTime.Today.AddDays(FacturaListado.DiasAvisoVencimiento);
         cmd.Parameters.Add("@desde", System.Data.SqlDbType.Date).Value = (object?)filtro.Desde?.Date ?? DBNull.Value;
         cmd.Parameters.Add("@hasta", System.Data.SqlDbType.Date).Value = (object?)filtro.Hasta?.Date ?? DBNull.Value;
         cmd.Parameters.AddWithValue("@t", SqlUtil.DbVal(filtro.Texto));

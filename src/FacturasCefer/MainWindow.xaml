@@ -40,7 +40,13 @@
 
                 <Border BorderBrush="{StaticResource LateralLinea}" BorderThickness="0,1,0,0" Padding="12,14">
                     <StackPanel>
-                        <RadioButton x:Name="NavSubir" Style="{StaticResource ItemLateral}" GroupName="Nav" Checked="Nav_Checked" IsChecked="True">
+                        <RadioButton x:Name="NavInicio" Style="{StaticResource ItemLateral}" GroupName="Nav" Checked="Nav_Checked" IsChecked="True">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icono}" Text="&#xE80F;"/>
+                                <TextBlock Text="Inicio"/>
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton x:Name="NavSubir" Style="{StaticResource ItemLateral}" GroupName="Nav" Checked="Nav_Checked">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Style="{StaticResource Icono}" Text="&#xE898;"/>
                                 <TextBlock Text="Subir facturas"/>
@@ -64,6 +70,12 @@
                                 <TextBlock Text="Cuentas contables"/>
                             </StackPanel>
                         </RadioButton>
+                        <RadioButton x:Name="NavImportaciones" Style="{StaticResource ItemLateral}" GroupName="Nav" Checked="Nav_Checked">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icono}" Text="&#xE715;"/>
+                                <TextBlock Text="Importaciones (correo)"/>
+                            </StackPanel>
+                        </RadioButton>
                     </StackPanel>
                 </Border>
             </DockPanel>
@@ -76,10 +88,12 @@
                 <TextBlock x:Name="TxtSubtitulo" Style="{StaticResource SubtituloPagina}"/>
             </StackPanel>
             <Grid>
-                <views:SubirFacturasView x:Name="Subir"/>
+                <views:InicioView x:Name="Inicio" Ir="Inicio_Ir"/>
+                <views:SubirFacturasView x:Name="Subir" Visibility="Collapsed"/>
                 <views:FacturasView x:Name="Facturas" Visibility="Collapsed"/>
                 <views:ProveedoresView x:Name="Proveedores" Visibility="Collapsed" VerFacturas="Proveedores_VerFacturas"/>
                 <views:CuentasView x:Name="Cuentas" Visibility="Collapsed"/>
+                <views:ImportacionesView x:Name="Importaciones" Visibility="Collapsed" IrASubir="Importaciones_IrASubir"/>
             </Grid>
         </DockPanel>
 

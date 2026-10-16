@@ -22,12 +22,15 @@ public partial class MainWindow : Window
 
         _secciones = new (RadioButton, FrameworkElement, string, string)[]
         {
+            (NavInicio, Inicio, "Inicio", $"Resumen de facturas de proveedores · {DateTime.Today:dddd, d 'de' MMMM 'de' yyyy}"),
             (NavSubir, Subir, "Subir facturas", "Arrastra, pega (Ctrl+V) o añade PDFs: la IA extrae los datos y tú los revisas antes de guardar."),
             (NavFacturas, Facturas, "Facturas", "Listado de facturas recibidas, estados, pagos y exportación a a3ASESOR | con."),
             (NavProveedores, Proveedores, "Proveedores", "Fichas de proveedores, IBAN, forma de pago y cuentas por defecto."),
             (NavCuentas, Cuentas, "Cuentas contables", "Catálogo de cuentas de gasto para asignar a proveedores y facturas."),
+            (NavImportaciones, Importaciones, "Importaciones desde el correo",
+                "Lo que ha hecho el importador automático con cada PDF recibido por correo (n8n → Google Drive → FACTURASCEFER)."),
         };
-        Mostrar(NavSubir);
+        Mostrar(NavInicio);
     }
 
     private void Nav_Checked(object sender, RoutedEventArgs e)
@@ -46,6 +49,33 @@ public partial class MainWindow : Window
             TxtSubtitulo.Text = s.Subtitulo;
         }
     }
+
+    /// <summary>Tarjeta de Inicio pulsada: abre la sección correspondiente ya filtrada.</summary>
+    private async void Inicio_Ir(object? sender, string destino)
+    {
+        switch (destino)
+        {
+            case "Importaciones":
+                Importaciones.MostrarIncidencias(false);
+                NavImportaciones.IsChecked = true;
+                return;
+            case "ImportacionesIncidencias":
+                Importaciones.MostrarIncidencias(true);
+                NavImportaciones.IsChecked = true;
+                return;
+            case "ProveedoresPorRevisar":
+                NavProveedores.IsChecked = true;
+                Proveedores.MostrarPendientesRevision();
+                return;
+        }
+        if (Enum.TryParse<Views.FacturasView.VistaRapida>(destino, out var vista))
+        {
+            await Facturas.AplicarVistaAsync(vista);
+            NavFacturas.IsChecked = true;
+        }
+    }
+
+    private void Importaciones_IrASubir(object? sender, EventArgs e) => NavSubir.IsChecked = true;
 
     private async void Proveedores_VerFacturas(object? sender, Models.Proveedor p)
     {

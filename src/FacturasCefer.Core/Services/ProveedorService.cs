@@ -14,7 +14,7 @@ public sealed class ProveedorService
     private SqlConnection Conexion() => new(_cfg.Facturas.ConnectionString);
 
     private const string Columnas =
-        "Id, RazonSocial, CIF, Direccion, CP, Poblacion, Provincia, Pais, IBAN, FormaPago, Tarjeta, CuentaContable, CuentaProveedor, PendienteRevision, Email, Telefono, Observaciones, Baja, FechaAlta";
+        "Id, RazonSocial, CIF, Direccion, CP, Poblacion, Provincia, Pais, IBAN, FormaPago, Tarjeta, CuentaContable, CuentaProveedor, PendienteRevision, DiasPago, Email, Telefono, Observaciones, Baja, FechaAlta";
 
     public async Task<List<Proveedor>> BuscarAsync(string? texto, bool incluirBajas, CancellationToken ct = default)
     {
@@ -52,9 +52,9 @@ public sealed class ProveedorService
         await cn.OpenAsync(ct);
         await using var cmd = cn.CreateCommand();
         cmd.CommandText = @"INSERT INTO dbo.Proveedor
-                                (RazonSocial, CIF, Direccion, CP, Poblacion, Provincia, Pais, IBAN, FormaPago, Tarjeta, CuentaContable, CuentaProveedor, PendienteRevision, Email, Telefono, Observaciones, IdUsuarioAlta)
+                                (RazonSocial, CIF, Direccion, CP, Poblacion, Provincia, Pais, IBAN, FormaPago, Tarjeta, CuentaContable, CuentaProveedor, PendienteRevision, DiasPago, Email, Telefono, Observaciones, IdUsuarioAlta)
                             OUTPUT INSERTED.Id
-                            VALUES (@rs, @cif, @dir, @cp, @pob, @prov, @pais, @iban, @fpago, @tarj, @cta, @ctaprov, @pend, @email, @tel, @obs, @usr)";
+                            VALUES (@rs, @cif, @dir, @cp, @pob, @prov, @pais, @iban, @fpago, @tarj, @cta, @ctaprov, @pend, @dias, @email, @tel, @obs, @usr)";
         AddParams(cmd, p);
         cmd.Parameters.AddWithValue("@pend", p.PendienteRevision);
         cmd.Parameters.AddWithValue("@usr", idUsuario);
@@ -93,7 +93,7 @@ public sealed class ProveedorService
             upd.Transaction = tx;
             upd.CommandText = @"UPDATE dbo.Proveedor
                                 SET RazonSocial = @rs, CIF = @cif, Direccion = @dir, CP = @cp, Poblacion = @pob,
-                                    Provincia = @prov, Pais = @pais, IBAN = @iban, FormaPago = @fpago, Tarjeta = @tarj, CuentaContable = @cta, CuentaProveedor = @ctaprov, PendienteRevision = 0, Email = @email, Telefono = @tel,
+                                    Provincia = @prov, Pais = @pais, IBAN = @iban, FormaPago = @fpago, Tarjeta = @tarj, CuentaContable = @cta, CuentaProveedor = @ctaprov, PendienteRevision = 0, DiasPago = @dias, Email = @email, Telefono = @tel,
                                     Observaciones = @obs
                                 WHERE Id = @id";
             AddParams(upd, p);
@@ -184,6 +184,7 @@ public sealed class ProveedorService
         cmd.Parameters.AddWithValue("@tarj", SqlUtil.DbVal(Validaciones.EnmascararTarjeta(p.Tarjeta)));
         cmd.Parameters.AddWithValue("@cta", SqlUtil.DbVal(p.CuentaContable));
         cmd.Parameters.AddWithValue("@ctaprov", SqlUtil.DbVal(p.CuentaProveedor));
+        cmd.Parameters.Add("@dias", System.Data.SqlDbType.SmallInt).Value = p.DiasPago is { } d ? (short)d : DBNull.Value;
         cmd.Parameters.AddWithValue("@email", SqlUtil.DbVal(p.Email));
         cmd.Parameters.AddWithValue("@tel", SqlUtil.DbVal(p.Telefono));
         cmd.Parameters.AddWithValue("@obs", SqlUtil.DbVal(p.Observaciones));
@@ -205,6 +206,7 @@ public sealed class ProveedorService
         CuentaContable = rd.Str("CuentaContable"),
         CuentaProveedor = rd.Str("CuentaProveedor"),
         PendienteRevision = rd.GetBoolean(rd.GetOrdinal("PendienteRevision")),
+        DiasPago = rd.IsDBNull(rd.GetOrdinal("DiasPago")) ? null : rd.GetInt16(rd.GetOrdinal("DiasPago")),
         Email = rd.Str("Email"),
         Telefono = rd.Str("Telefono"),
         Observaciones = rd.Str("Observaciones"),

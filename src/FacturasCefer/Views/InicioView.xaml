@@ -1,0 +1,166 @@
+<UserControl x:Class="FacturasCefer.Views.InicioView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctrl="clr-namespace:FacturasCefer.Controls">
+    <Grid>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+                <!-- Aviso del importador parado (solo si hace falta) -->
+                <Border x:Name="PanelImportador" Visibility="Collapsed" Style="{StaticResource AvisoError}" Margin="0,0,12,12">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="Ver importaciones" Tag="Importaciones" Click="Tarjeta_Click"
+                                VerticalAlignment="Center" Margin="12,0,0,0"/>
+                        <TextBlock x:Name="TxtImportadorAviso" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                    </DockPanel>
+                </Border>
+
+                <!-- Cifras -->
+                <UniformGrid Columns="4">
+                    <Button Style="{StaticResource TarjetaCifra}" Tag="Pendientes" Click="Tarjeta_Click"
+                            ToolTip="Facturas recibidas o validadas, todavía sin pagar">
+                        <StackPanel>
+                            <TextBlock Text="PENDIENTE DE PAGAR" Style="{StaticResource EtiquetaCifra}"/>
+                            <TextBlock x:Name="TxtPendientes" Style="{StaticResource ValorCifra}" Text="—"/>
+                            <TextBlock x:Name="TxtPendientesDet" Style="{StaticResource DetalleCifra}"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource TarjetaCifra}" Tag="Vencidas" Click="Tarjeta_Click"
+                            ToolTip="Pendientes de pago con el vencimiento ya pasado">
+                        <StackPanel>
+                            <TextBlock Text="VENCIDAS SIN PAGAR" Style="{StaticResource EtiquetaCifra}"/>
+                            <TextBlock x:Name="TxtVencidas" Style="{StaticResource ValorCifra}" Text="—"/>
+                            <TextBlock x:Name="TxtVencidasDet" Style="{StaticResource DetalleCifra}"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource TarjetaCifra}" Tag="VencenPronto" Click="Tarjeta_Click"
+                            ToolTip="Pendientes de pago que vencen hoy o en los próximos 7 días">
+                        <StackPanel>
+                            <TextBlock Text="VENCEN EN 7 DÍAS" Style="{StaticResource EtiquetaCifra}"/>
+                            <TextBlock x:Name="TxtPronto" Style="{StaticResource ValorCifra}" Text="—"/>
+                            <TextBlock x:Name="TxtProntoDet" Style="{StaticResource DetalleCifra}"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource TarjetaCifra}" Tag="MesActual" Click="Tarjeta_Click"
+                            ToolTip="Facturas de este mes (por fecha de factura), sin contar las rechazadas">
+                        <StackPanel>
+                            <TextBlock x:Name="TxtMesTitulo" Text="GASTO DEL MES" Style="{StaticResource EtiquetaCifra}"/>
+                            <TextBlock x:Name="TxtMes" Style="{StaticResource ValorCifra}" Text="—"/>
+                            <TextBlock x:Name="TxtMesDet" Style="{StaticResource DetalleCifra}"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Button Style="{StaticResource TarjetaCifra}" Tag="PorRevisar" Click="Tarjeta_Click"
+                            ToolTip="Facturas importadas del correo marcadas para revisar">
+                        <StackPanel>
+                            <TextBlock Text="⚑ FACTURAS POR REVISAR" Style="{StaticResource EtiquetaCifra}"/>
+                            <TextBlock x:Name="TxtRevisar" Style="{StaticResource ValorCifra}" Text="—"/>
+                            <TextBlock Text="importadas del correo con dudas" Style="{StaticResource DetalleCifra}"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource TarjetaCifra}" Tag="SinCuenta" Click="Tarjeta_Click"
+                            ToolTip="Facturas sin cuenta contable de gasto (necesaria para exportar a A3)">
+                        <StackPanel>
+                            <TextBlock Text="SIN CUENTA CONTABLE" Style="{StaticResource EtiquetaCifra}"/>
+                            <TextBlock x:Name="TxtSinCuenta" Style="{StaticResource ValorCifra}" Text="—"/>
+                            <TextBlock Text="necesaria para exportar a A3" Style="{StaticResource DetalleCifra}"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource TarjetaCifra}" Tag="ProveedoresPorRevisar" Click="Tarjeta_Click"
+                            ToolTip="Proveedores dados de alta automáticamente por el importador">
+                        <StackPanel>
+                            <TextBlock Text="⚑ PROVEEDORES NUEVOS" Style="{StaticResource EtiquetaCifra}"/>
+                            <TextBlock x:Name="TxtProvRevisar" Style="{StaticResource ValorCifra}" Text="—"/>
+                            <TextBlock Text="altas automáticas por revisar" Style="{StaticResource DetalleCifra}"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource TarjetaCifra}" Tag="ImportacionesIncidencias" Click="Tarjeta_Click"
+                            ToolTip="Importación automática desde el correo">
+                        <StackPanel>
+                            <TextBlock Text="IMPORTADOR (24 H)" Style="{StaticResource EtiquetaCifra}"/>
+                            <TextBlock x:Name="TxtImportador" Style="{StaticResource ValorCifra}" Text="—"/>
+                            <TextBlock x:Name="TxtImportadorDet" Style="{StaticResource DetalleCifra}"/>
+                        </StackPanel>
+                    </Button>
+                </UniformGrid>
+
+                <!-- Próximos pagos y gasto por mes -->
+                <Grid Margin="0,0,12,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*" MinWidth="280"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Style="{StaticResource Tarjeta}">
+                        <DockPanel>
+                            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                                <Button DockPanel.Dock="Right" Content="Ver todas" Style="{StaticResource BotonEnlace}"
+                                        Tag="VencidasOPronto" Click="Tarjeta_Click" VerticalAlignment="Center"/>
+                                <TextBlock Text="Próximos pagos" Style="{StaticResource Seccion}" Margin="0"/>
+                            </DockPanel>
+                            <Grid>
+                                <DataGrid x:Name="GridProximos" Style="{StaticResource Tabla}" Height="420"
+                                          MouseDoubleClick="GridProximos_MouseDoubleClick" BorderThickness="0">
+                                    <DataGrid.RowStyle>
+                                        <Style TargetType="DataGridRow" BasedOn="{StaticResource FilaTabla}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Vencida}" Value="True">
+                                                    <Setter Property="Foreground" Value="{StaticResource ErrorTexto}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </DataGrid.RowStyle>
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Vence" Binding="{Binding FechaVencimiento, StringFormat=dd/MM/yyyy}" Width="90" MinWidth="90"/>
+                                        <DataGridTextColumn Header="Días" Binding="{Binding DiasVencimiento}" Width="80" MinWidth="80"/>
+                                        <DataGridTextColumn Header="Proveedor" Binding="{Binding Proveedor}" Width="*" MinWidth="140"/>
+                                        <DataGridTextColumn Header="Nº factura" Binding="{Binding NumeroFactura}" Width="110" MinWidth="110"/>
+                                        <DataGridTextColumn Header="Total" Binding="{Binding Total, StringFormat=N2}" Width="90" MinWidth="90"
+                                                            ElementStyle="{StaticResource Derecha}"/>
+                                        <DataGridTemplateColumn Header="Estado" Width="100" MinWidth="100">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <Border Style="{StaticResource PastillaEstado}">
+                                                        <TextBlock Text="{Binding EstadoTexto}"/>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                                <ctrl:EstadoLista x:Name="EstadoProximos" MensajeVacio="Nada vencido ni con vencimiento en los próximos 7 días."/>
+                            </Grid>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Grid.Column="2" Style="{StaticResource Tarjeta}">
+                        <StackPanel>
+                            <TextBlock Text="Gasto por mes" Style="{StaticResource Seccion}" Margin="0,0,0,2"/>
+                            <TextBlock Text="Facturas no rechazadas, por fecha de factura" Style="{StaticResource TextoSecundario}" Margin="0,0,0,12"/>
+                            <ItemsControl x:Name="ListaMeses">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,0,0,10">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="72"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="100"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding Texto}" Foreground="{StaticResource TextoEtiqueta}" VerticalAlignment="Center"/>
+                                            <ProgressBar Grid.Column="1" Height="12" Value="{Binding Porcentaje, Mode=OneWay}" Maximum="100"
+                                                         VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="2" Text="{Binding ImporteTexto}" HorizontalAlignment="Right"
+                                                       VerticalAlignment="Center" FontWeight="Medium"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock x:Name="TxtActualizado" Style="{StaticResource TextoSecundario}" Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
+        <ctrl:EstadoLista x:Name="Estado"/>
+    </Grid>
+</UserControl>

@@ -190,6 +190,7 @@ public sealed class ImportacionAutomaticaService
         var desde = Math.Clamp(ia.PaginaInicio, 1, paginas);
         var hasta = Math.Clamp(ia.PaginaFin, desde, paginas);
         DateTime? vto = DateTime.TryParseExact(ia.FechaVencimiento, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var v) ? v : null;
+        vto ??= proveedor.VencimientoPorDefecto(fecha); // la factura no lo trae: plazo habitual del proveedor
 
         var factura = new FacturaProveedor
         {

@@ -104,6 +104,13 @@
             </StackPanel>
 
             <StackPanel Grid.Row="6" Grid.ColumnSpan="3">
+                <TextBlock Text="Plazo de pago habitual" Style="{StaticResource Etiqueta}"/>
+                <StackPanel Orientation="Horizontal">
+                    <TextBox x:Name="TxtDiasPago" Width="70" MaxLength="3" TextAlignment="Right"
+                             ToolTip="Días desde la fecha de factura. Vacío = sin plazo habitual."/>
+                    <TextBlock Text="días desde la fecha de factura (se usa cuando la factura no trae vencimiento)"
+                               Style="{StaticResource TextoSecundario}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                </StackPanel>
                 <TextBlock Text="Observaciones" Style="{StaticResource Etiqueta}"/>
                 <TextBox x:Name="TxtObservaciones" Height="60" AcceptsReturn="True" TextWrapping="Wrap"
                          VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto"/>

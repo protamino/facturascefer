@@ -5,6 +5,10 @@
     <UserControl.Resources>
         <Style x:Key="Fila" TargetType="DataGridRow" BasedOn="{StaticResource FilaTabla}">
             <Style.Triggers>
+                <DataTrigger Binding="{Binding VencePronto}" Value="True">
+                    <Setter Property="Foreground" Value="{StaticResource AvisoTexto}"/>
+                    <Setter Property="ToolTip" Value="Vence en los próximos 7 días"/>
+                </DataTrigger>
                 <DataTrigger Binding="{Binding Vencida}" Value="True">
                     <Setter Property="Foreground" Value="{StaticResource ErrorTexto}"/>
                     <Setter Property="ToolTip" Value="Vencida y sin pagar"/>
@@ -51,6 +55,15 @@
                 <ComboBoxItem Content="Transferencia"/>
                 <ComboBoxItem Content="Domiciliación"/>
                 <ComboBoxItem Content="Tarjeta"/>
+            </ComboBox>
+
+            <TextBlock Text="Vencimiento:" Style="{StaticResource Filtro}"/>
+            <ComboBox x:Name="CmbVencimiento" Width="170" SelectedIndex="0" SelectionChanged="Filtro_Changed"
+                      ToolTip="Solo facturas pendientes de pago (recibidas o validadas)">
+                <ComboBoxItem Content="(Todos)"/>
+                <ComboBoxItem Content="Vencidas"/>
+                <ComboBoxItem Content="Vencen en ≤ 7 días"/>
+                <ComboBoxItem Content="Vencidas o en ≤ 7 días"/>
             </ComboBox>
 
             <TextBlock Text="Origen:" Style="{StaticResource Filtro}"/>
@@ -102,6 +115,7 @@
             <Button x:Name="BtnPdf" Content="Abrir PDF" Click="BtnPdf_Click"/>
             <Button Content="Actualizar" Click="BtnActualizar_Click"/>
             <Separator Width="16" Background="Transparent"/>
+            <Button Content="⤓ Excel…" Click="BtnExcel_Click" ToolTip="Exportar el listado actual (con estos filtros) a Excel"/>
             <Button Content="⇪ Exportaciones ▸ a3ASESOR | con…" Click="BtnExportarA3_Click"
                     ToolTip="Exportar facturas recibidas a CSV para el Importador de Datos de a3ASESOR | con"/>
         </WrapPanel>
@@ -139,6 +153,8 @@
                 <DataGridTextColumn Header="Concepto" Binding="{Binding Concepto}" Width="2*" MinWidth="140"/>
                 <DataGridTextColumn Header="Fecha" Binding="{Binding FechaFactura, StringFormat=dd/MM/yyyy}" Width="90" MinWidth="90"/>
                 <DataGridTextColumn Header="Vencimiento" Binding="{Binding FechaVencimiento, StringFormat=dd/MM/yyyy}" Width="95" MinWidth="95"/>
+                <DataGridTextColumn Header="Días" Binding="{Binding DiasVencimiento}" Width="75" MinWidth="75"
+                                    SortMemberPath="FechaVencimiento"/>
                 <DataGridTextColumn Header="Base" Binding="{Binding BaseImponible, StringFormat=N2}" Width="85" MinWidth="85"
                                     ElementStyle="{StaticResource Derecha}"/>
                 <DataGridTextColumn Header="IVA" Binding="{Binding CuotaIVA, StringFormat=N2}" Width="75" MinWidth="75"

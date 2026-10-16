@@ -147,6 +147,67 @@
         </Style.Triggers>
     </Style>
 
+    <!-- Pastilla de resultado del importador (Binding Resultado) -->
+    <Style x:Key="PastillaImportacion" TargetType="Border" BasedOn="{StaticResource PastillaEstado}">
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding Resultado}" Value="procesada">
+                <Setter Property="Background" Value="{StaticResource OkFondo}"/>
+                <Setter Property="TextElement.Foreground" Value="{StaticResource OkTexto}"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding Resultado}" Value="duplicada">
+                <Setter Property="Background" Value="{StaticResource NeutroFondo}"/>
+                <Setter Property="TextElement.Foreground" Value="{StaticResource NeutroTexto}"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding Resultado}" Value="sin_factura">
+                <Setter Property="Background" Value="{StaticResource AvisoFondo}"/>
+                <Setter Property="TextElement.Foreground" Value="{StaticResource AvisoTexto}"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding Resultado}" Value="error">
+                <Setter Property="Background" Value="{StaticResource ErrorFondo}"/>
+                <Setter Property="TextElement.Foreground" Value="{StaticResource ErrorTexto}"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Tarjeta de cifra del panel de inicio (botón: al pulsarla abre el listado filtrado) -->
+    <Style x:Key="TarjetaCifra" TargetType="Button">
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Margin" Value="0,0,12,12"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Marco" Background="{StaticResource Superficie}" BorderBrush="{StaticResource Borde}"
+                            BorderThickness="1" CornerRadius="{StaticResource Radio}" Padding="18,14">
+                        <ContentPresenter/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Marco" Property="BorderBrush" Value="{StaticResource Rojo}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="EtiquetaCifra" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="FontWeight" Value="Medium"/>
+        <Setter Property="Foreground" Value="{StaticResource TextoSuave}"/>
+    </Style>
+    <Style x:Key="ValorCifra" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="28"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Margin" Value="0,6,0,0"/>
+        <Setter Property="Foreground" Value="{StaticResource Texto}"/>
+    </Style>
+    <Style x:Key="DetalleCifra" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Foreground" Value="{StaticResource TextoSuave}"/>
+        <Setter Property="Margin" Value="0,2,0,0"/>
+        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+    </Style>
+
     <!-- ===================================================== Botones -->
     <Style TargetType="Button">
         <Setter Property="Background" Value="{StaticResource Superficie}"/>

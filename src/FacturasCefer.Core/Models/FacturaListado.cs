@@ -47,9 +47,28 @@ public sealed class FacturaListado
         _ => "Transf.",
     };
 
+    /// <summary>Días de antelación con que se avisa de un vencimiento próximo.</summary>
+    public const int DiasAvisoVencimiento = 7;
+
+    public bool Pendiente => Estado is EstadoFactura.Recibida or EstadoFactura.Validada;
+
     /// <summary>Pendiente de pago con el vencimiento ya pasado.</summary>
-    public bool Vencida => Estado is EstadoFactura.Recibida or EstadoFactura.Validada
-                           && FechaVencimiento is { } v && v.Date < DateTime.Today;
+    public bool Vencida => Pendiente && FechaVencimiento is { } v && v.Date < DateTime.Today;
+
+    /// <summary>Pendiente de pago que vence hoy o en los próximos <see cref="DiasAvisoVencimiento"/> días.</summary>
+    public bool VencePronto => Pendiente && FechaVencimiento is { } v
+                               && v.Date >= DateTime.Today && v.Date <= DateTime.Today.AddDays(DiasAvisoVencimiento);
+
+    /// <summary>Texto para la columna de días: «hace 3 d», «hoy», «en 5 d».</summary>
+    public string DiasVencimiento
+    {
+        get
+        {
+            if (!Pendiente || FechaVencimiento is not { } v) return "";
+            var d = (v.Date - DateTime.Today).Days;
+            return d switch { 0 => "hoy", < 0 => $"hace {-d} d", _ => $"en {d} d" };
+        }
+    }
 
     public bool Anulada => Estado == EstadoFactura.Rechazada;
 
@@ -73,6 +92,15 @@ public sealed record CambioEstado(DateTime Fecha, EstadoFactura? EstadoAnterior,
         : Textos.Estado(EstadoNuevo);
 }
 
+/// <summary>Filtro rápido por vencimiento (solo facturas pendientes de pago).</summary>
+public enum FiltroVencimiento
+{
+    Todas = 0,
+    Vencidas = 1,
+    VencenPronto = 2,
+    VencidasOPronto = 3,
+}
+
 /// <summary>Criterios del listado de facturas.</summary>
 public sealed class FiltroFacturas
 {
@@ -86,6 +114,7 @@ public sealed class FiltroFacturas
     public bool SoloRevisar { get; set; }
     public string? Texto { get; set; }
     public bool PorVencimiento { get; set; }
+    public FiltroVencimiento Vencimiento { get; set; }
     public DateTime? Desde { get; set; }
     public DateTime? Hasta { get; set; }
 }

@@ -1,0 +1,90 @@
+<UserControl x:Class="FacturasCefer.Views.ImportacionesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctrl="clr-namespace:FacturasCefer.Controls">
+    <UserControl.Resources>
+        <Style x:Key="Filtro" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoEtiqueta}"/>
+        </Style>
+    </UserControl.Resources>
+
+    <DockPanel>
+        <!-- Estado del servicio -->
+        <Border x:Name="PanelServicio" DockPanel.Dock="Top" Style="{StaticResource AvisoInfo}" Margin="0,0,0,10">
+            <TextBlock x:Name="TxtServicio" TextWrapping="Wrap"/>
+        </Border>
+
+        <!-- Filtros -->
+        <Border DockPanel.Dock="Top" Style="{StaticResource Tarjeta}" Padding="12,8" Margin="0,0,0,10">
+            <WrapPanel>
+                <TextBlock Text="Resultado:" Style="{StaticResource Filtro}"/>
+                <ComboBox x:Name="CmbResultado" Width="200" SelectedIndex="0" Margin="0,4,16,4" SelectionChanged="Filtro_Changed">
+                    <ComboBoxItem Content="(Todos)" Tag=""/>
+                    <ComboBoxItem Content="Con incidencias (error / sin factura)" Tag="incidencias"/>
+                    <ComboBoxItem Content="Registradas" Tag="procesada"/>
+                    <ComboBoxItem Content="Duplicadas" Tag="duplicada"/>
+                    <ComboBoxItem Content="Sin factura" Tag="sin_factura"/>
+                    <ComboBoxItem Content="Error" Tag="error"/>
+                </ComboBox>
+                <TextBlock Text="desde" Style="{StaticResource Filtro}"/>
+                <DatePicker x:Name="DpDesde" Width="120" Margin="0,4,8,4" SelectedDateChanged="Filtro_Changed"/>
+                <TextBlock Text="hasta" Style="{StaticResource Filtro}"/>
+                <DatePicker x:Name="DpHasta" Width="120" Margin="0,4,16,4" SelectedDateChanged="Filtro_Changed"/>
+                <TextBlock Text="Buscar:" Style="{StaticResource Filtro}"/>
+                <TextBox x:Name="TxtBuscar" Width="220" Margin="0,4,0,4" TextChanged="TxtBuscar_TextChanged"
+                         ToolTip="Fichero, remitente, asunto o mensaje"/>
+            </WrapPanel>
+        </Border>
+
+        <!-- Acciones -->
+        <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,4">
+            <WrapPanel.Resources>
+                <Style TargetType="Button" BasedOn="{StaticResource BotonBarra}">
+                    <Setter Property="Margin" Value="0,0,6,6"/>
+                </Style>
+            </WrapPanel.Resources>
+            <Button x:Name="BtnFicha" Content="Ver factura…" Click="BtnFicha_Click" ToolTip="Ficha de la factura registrada"/>
+            <Button x:Name="BtnDrive" Content="Abrir PDF en Drive" Click="BtnDrive_Click"/>
+            <Button Content="Subir a mano…" Click="BtnSubir_Click"
+                    ToolTip="Para los PDF con error o sin datos: descárgalo de Drive y súbelo en «Subir facturas»"/>
+            <Button Content="Actualizar" Click="BtnActualizar_Click"/>
+            <Button Content="⤓ Excel…" Click="BtnExcel_Click"/>
+        </WrapPanel>
+
+        <!-- Detalle de la fila seleccionada -->
+        <Border DockPanel.Dock="Bottom" Style="{StaticResource Tarjeta}" Padding="12,8" Margin="0,10,0,0">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="Detalle" Style="{StaticResource Etiqueta}" Margin="0,0,0,4"/>
+                <TextBox x:Name="TxtDetalle" Height="96" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                         VerticalScrollBarVisibility="Auto" BorderThickness="0" Padding="0" VerticalContentAlignment="Top"/>
+            </DockPanel>
+        </Border>
+        <TextBlock x:Name="TxtContador" DockPanel.Dock="Bottom" Foreground="{StaticResource TextoSuave}" Margin="0,8,0,0"/>
+
+        <Grid>
+            <DataGrid x:Name="Grid" Style="{StaticResource Tabla}" MouseDoubleClick="Grid_MouseDoubleClick"
+                      SelectionChanged="Grid_SelectionChanged">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Fecha" Binding="{Binding Fecha, StringFormat=dd/MM/yyyy HH:mm}" Width="125" MinWidth="125"/>
+                    <DataGridTemplateColumn Header="Resultado" Width="110" MinWidth="110" SortMemberPath="ResultadoTexto">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource PastillaImportacion}">
+                                    <TextBlock Text="{Binding ResultadoTexto}"/>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="Fichero" Binding="{Binding NombreFichero}" Width="*" MinWidth="180"/>
+                    <DataGridTextColumn Header="Remitente" Binding="{Binding Remitente}" Width="*" MinWidth="160"/>
+                    <DataGridTextColumn Header="Asunto" Binding="{Binding Asunto}" Width="*" MinWidth="160"/>
+                    <DataGridTextColumn Header="Detalle" Binding="{Binding MensajeCorto}" Width="2*" MinWidth="220"/>
+                    <DataGridTextColumn Header="Facturas" Binding="{Binding IdsFacturas}" Width="80" MinWidth="80"/>
+                </DataGrid.Columns>
+            </DataGrid>
+            <ctrl:EstadoLista x:Name="Estado" MensajeVacio="No hay importaciones con estos filtros."/>
+        </Grid>
+    </DockPanel>
+</UserControl>

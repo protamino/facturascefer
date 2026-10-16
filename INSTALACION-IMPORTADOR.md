@@ -97,6 +97,9 @@ Requisitos de red del servidor: SQL-01 (1433), la carpeta UNC, `api.anthropic.co
 
 - **Log**: `C:\FacturasCefer.Importador\logs\importador-AAAA-MM-DD.log` (un fichero por día).
 - **Registro** de cada PDF en la tabla `FacturaImportacion` (resultado y mensaje); un PDF ya registrado no se vuelve a procesar.
+  En la app: sección **Importaciones (correo)**, con filtro por resultado, detalle, enlace al PDF en Drive y a la factura creada.
+- **Latido** (desde 1.8.0): al terminar cada pasada el servicio escribe en `ImportadorEstado` la hora, si fue bien y el equipo.
+  La app avisa en **Inicio** e **Importaciones** si lleva más de 30 minutos sin latido (servicio parado) o si la última pasada falló.
 - Si un PDF da error *técnico* (red, BD caída…) se queda en CEFER/Facturas y se reintenta en la siguiente pasada.
 - PDF en `Error`: subirlo a mano desde la app (pestaña «Subir facturas»).
 - Para reprocesar un PDF: borrar su fila de `FacturaImportacion` y devolverlo a CEFER/Facturas.
