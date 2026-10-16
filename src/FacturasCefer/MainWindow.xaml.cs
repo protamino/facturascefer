@@ -31,6 +31,34 @@ public partial class MainWindow : Window
                 "Lo que ha hecho el importador automático con cada PDF recibido por correo (n8n → Google Drive → FACTURASCEFER)."),
         };
         Mostrar(NavInicio);
+        RestaurarVentana();
+    }
+
+    /// <summary>Tamaño y posición de la última sesión (si sigue cabiendo en las pantallas actuales).</summary>
+    private void RestaurarVentana()
+    {
+        if (Services.Preferencias.Actual.Ventana is not { } v || v.Width < MinWidth || v.Height < MinHeight) return;
+        var visible = new Rect(SystemParameters.VirtualScreenLeft, SystemParameters.VirtualScreenTop,
+            SystemParameters.VirtualScreenWidth, SystemParameters.VirtualScreenHeight);
+        if (!visible.IntersectsWith(new Rect(v.Left, v.Top, v.Width, v.Height))) return;
+        WindowStartupLocation = WindowStartupLocation.Manual;
+        Left = v.Left;
+        Top = v.Top;
+        Width = v.Width;
+        Height = v.Height;
+        if (v.Maximizada) WindowState = WindowState.Maximized;
+    }
+
+    private void GuardarPreferencias()
+    {
+        var p = Services.Preferencias.Actual;
+        var r = WindowState == WindowState.Normal ? new Rect(Left, Top, Width, Height) : RestoreBounds;
+        p.Ventana = new Services.VentanaPref
+        {
+            Left = r.Left, Top = r.Top, Width = r.Width, Height = r.Height,
+            Maximizada = WindowState == WindowState.Maximized,
+        };
+        p.Guardar();
     }
 
     private void Nav_Checked(object sender, RoutedEventArgs e)
@@ -118,6 +146,10 @@ public partial class MainWindow : Window
         if (Subir.HayPendientes &&
             MessageBox.Show(this, "Hay facturas subidas sin guardar. Si sales se perderán.\n\n¿Salir igualmente?",
                 "Salir", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes)
+        {
             e.Cancel = true;
+            return;
+        }
+        GuardarPreferencias();
     }
 }

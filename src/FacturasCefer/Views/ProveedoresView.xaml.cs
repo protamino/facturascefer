@@ -4,6 +4,7 @@ using System.Windows.Input;
 using System.Windows.Threading;
 using FacturasCefer.Dialogs;
 using FacturasCefer.Models;
+using FacturasCefer.Services;
 
 namespace FacturasCefer.Views;
 
@@ -15,6 +16,7 @@ public partial class ProveedoresView : UserControl
     public ProveedoresView()
     {
         InitializeComponent();
+        TablaPersistente.Registrar(Grid, "proveedores");
         _debounce.Tick += (_, _) => { _debounce.Stop(); _ = CargarAsync(); };
         Loaded += (_, _) => { if (Grid.ItemsSource is null) _ = CargarAsync(); };
         ActualizarBotones();

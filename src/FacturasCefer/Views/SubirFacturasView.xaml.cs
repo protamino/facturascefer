@@ -31,6 +31,13 @@ public partial class SubirFacturasView : UserControl
     private string? _ultimoResumen;
     private Task<bool>? _initVisor;
 
+    /// <summary>Campos marcados como dudosos por la IA (en el orden del formulario) y el último visitado.</summary>
+    private readonly List<Control> _dudosos = new();
+    private int _dudosoActual = -1;
+
+    /// <summary>null = sin total; true/false = cuadra o no.</summary>
+    private bool? _cuadra;
+
     private static string CarpetaTemp => Path.Combine(Path.GetTempPath(), "FacturasCefer", "cola");
 
     public SubirFacturasView()
@@ -39,6 +46,12 @@ public partial class SubirFacturasView : UserControl
         PreviewKeyDown += OnPreviewKeyDown;
         Loaded += (_, _) => _initVisor ??= InicializarVisorAsync();
         LimpiarTempAntiguos();
+
+        var pref = Preferencias.Actual;
+        pref.Recordar(SecProveedor, "revision.proveedor");
+        pref.Recordar(SecFactura, "revision.factura");
+        pref.Recordar(SecImportes, "revision.importes");
+        pref.Recordar(SecOtros, "revision.otros");
     }
 
     /// <summary>True si hay facturas sin guardar ni descartar (para avisar al cerrar).</summary>
@@ -67,6 +80,12 @@ public partial class SubirFacturasView : UserControl
         {
             AgregarArchivos(Clipboard.GetFileDropList().Cast<string>());
             e.Handled = true;
+        }
+        else if (e.Key == Key.S && Keyboard.Modifiers == ModifierKeys.Control && BtnGuardar.IsEnabled
+                 && PanelRevision.Visibility == Visibility.Visible)
+        {
+            e.Handled = true;
+            BtnGuardar_Click(BtnGuardar, new RoutedEventArgs());
         }
     }
 
@@ -108,6 +127,20 @@ public partial class SubirFacturasView : UserControl
 
         ActualizarCola();
         if (_pdf is null) _ = SiguientePdfAsync();
+        else if (PanelIA.Visibility != Visibility.Visible) PrecargarSiguiente();
+    }
+
+    /// <summary>
+    /// Lanza en segundo plano la lectura con IA del siguiente PDF de la cola, para que esté lista al terminar
+    /// de revisar el actual. Solo uno por adelantado.
+    /// </summary>
+    private void PrecargarSiguiente()
+    {
+        if (_cola.Count == 0) return;
+        var siguiente = _cola.Peek();
+        if (siguiente.Prelectura is not null) return;
+        siguiente.Prelectura = App.Extraccion.ExtraerAsync(siguiente.RutaLocal, siguiente.Cancelacion.Token);
+        ActualizarCola();
     }
 
     private static bool EsPdf(string ruta)
@@ -127,7 +160,10 @@ public partial class SubirFacturasView : UserControl
     private void ActualizarCola()
     {
         var partes = new List<string>();
-        if (_cola.Count > 0) partes.Add($"{_cola.Count} PDF en cola.");
+        if (_cola.Count > 0)
+            partes.Add($"{_cola.Count} PDF en cola" +
+                       (_cola.Peek().Prelectura is { IsCompleted: false } ? " (leyendo el siguiente en segundo plano…)." :
+                        _cola.Peek().Prelectura is { IsCompletedSuccessfully: true } ? " (el siguiente ya está leído)." : "."));
         if (_ultimoResumen is not null) partes.Add(_ultimoResumen);
         TxtCola.Text = string.Join("   ", partes);
         TxtCola.Visibility = partes.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -194,22 +230,35 @@ public partial class SubirFacturasView : UserControl
         OcultarAviso();
         TxtPosicion.Text = "";
         TxtEstadoFactura.Text = "";
-        SetOcupado(true, $"Leyendo «{pdf.NombreOriginal}» con IA…");
+        // Lectura anticipada fallida o cancelada: se vuelve a lanzar.
+        if (pdf.Prelectura is { IsFaulted: true } or { IsCanceled: true }) pdf.Prelectura = null;
+        if (pdf.Cancelacion.IsCancellationRequested) pdf.Cancelacion = new CancellationTokenSource();
+        SetOcupado(true, pdf.Prelectura is { IsCompletedSuccessfully: true }
+            ? $"«{pdf.NombreOriginal}» ya se leyó en segundo plano…"
+            : $"Leyendo «{pdf.NombreOriginal}» con IA…");
 
         List<FacturaExtraida>? facturas = null;
         string? error = null;
         try
         {
-            facturas = await App.Extraccion.ExtraerAsync(pdf.RutaLocal);
+            pdf.Prelectura ??= App.Extraccion.ExtraerAsync(pdf.RutaLocal, pdf.Cancelacion.Token);
+            facturas = await pdf.Prelectura;
+        }
+        catch (OperationCanceledException) when (pdf.Cancelacion.IsCancellationRequested)
+        {
+            error = "lectura cancelada.";
+            pdf.Prelectura = null;
         }
         catch (ReglaNegocioException ex)
         {
             error = ex.Message;
+            pdf.Prelectura = null;
         }
         catch (Exception ex)
         {
             App.Log("ia-error.log", ex);
             error = ex.GetType().Name + ": " + ex.Message;
+            pdf.Prelectura = null;
         }
         finally
         {
@@ -217,6 +266,7 @@ public partial class SubirFacturasView : UserControl
         }
 
         if (!ReferenceEquals(pdf, _pdf)) return; // se descartó mientras la IA trabajaba
+        PrecargarSiguiente();
 
         pdf.Facturas.Clear();
         if (facturas is { Count: > 0 })
@@ -252,8 +302,11 @@ public partial class SubirFacturasView : UserControl
                 "Reintentar IA", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
+        _pdf.Prelectura = null; // reintento: lectura nueva
         await ExtraerAsync();
     }
+
+    private void BtnCancelarIA_Click(object sender, RoutedEventArgs e) => _pdf?.Cancelacion.Cancel();
 
     // ------------------------------------------------------------------ Mostrar factura
 
@@ -304,7 +357,119 @@ public partial class SubirFacturasView : UserControl
         _cifBuscado = null;
         await BuscarProveedorAsync();
         ActualizarCuadre();
+        ActualizarResumen();
         await MostrarPaginasEnVisorAsync();
+    }
+
+    // ------------------------------------------------------------------ Resumen de la revisión
+
+    /// <summary>
+    /// Fila de etiquetas con el estado de cada comprobación (proveedor, IBAN, cuadre, datos dudosos, duplicado).
+    /// Al pulsar una se va al campo correspondiente.
+    /// </summary>
+    private void ActualizarResumen()
+    {
+        PanelResumen.Children.Clear();
+        var fr = _pdf?.Actual;
+        if (fr is null || fr.Estado != EstadoRevision.Pendiente)
+        {
+            PanelResumen.Visibility = Visibility.Collapsed;
+            return;
+        }
+        PanelResumen.Visibility = Visibility.Visible;
+
+        void Chip(string texto, TipoAviso tipo, Control? destino, string? ayuda = null, Action? accion = null)
+        {
+            var b = new Button
+            {
+                Style = (Style)FindResource("Chip"),
+                Content = texto,
+                ToolTip = ayuda,
+                Background = tipo switch
+                {
+                    TipoAviso.Ok => Tema.OkFondo, TipoAviso.Error => Tema.ErrorFondo,
+                    TipoAviso.Atencion => Tema.AvisoFondo, _ => Tema.InfoFondo,
+                },
+                Foreground = tipo switch
+                {
+                    TipoAviso.Ok => Tema.OkTexto, TipoAviso.Error => Tema.ErrorTexto,
+                    TipoAviso.Atencion => Tema.AvisoTexto, _ => Tema.InfoTexto,
+                },
+                BorderBrush = tipo switch
+                {
+                    TipoAviso.Ok => Tema.OkBorde, TipoAviso.Error => Tema.ErrorBorde,
+                    TipoAviso.Atencion => Tema.AvisoBorde, _ => Tema.InfoBorde,
+                },
+            };
+            b.Click += (_, _) =>
+            {
+                if (accion is not null) accion();
+                else if (destino is not null) IrACampo(destino);
+            };
+            PanelResumen.Children.Add(b);
+        }
+
+        // Proveedor
+        if (_proveedor is null)
+            Chip(Validaciones.NormalizarCif(TxtCif.Text).Length == 0 ? "⚠ Falta el CIF" : "⚠ Proveedor no registrado",
+                TipoAviso.Atencion, TxtCif, "Indica el CIF o da de alta el proveedor");
+        else
+            Chip(_proveedor.Baja ? "⚠ Proveedor de baja" : "✔ Proveedor", _proveedor.Baja ? TipoAviso.Atencion : TipoAviso.Ok,
+                TxtCif, _proveedor.RazonSocial);
+
+        // IBAN / forma de pago
+        if (FormaPagoActual == FormaPago.Transferencia)
+        {
+            var iban = Validaciones.NormalizarIban(TxtIban.Text);
+            if (iban.Length == 0)
+                Chip("⚠ Sin IBAN", TipoAviso.Atencion, TxtIban, "La factura no trae IBAN: se pagará al del proveedor");
+            else if (!Validaciones.IbanValido(iban))
+                Chip("⚠ IBAN no válido", TipoAviso.Error, TxtIban);
+            else if (PanelIban.Visibility == Visibility.Visible && ReferenceEquals(PanelIban.Style, Tema.EstiloAviso(TipoAviso.Error)))
+                Chip("⚠ IBAN distinto al del proveedor", TipoAviso.Error, TxtIban, "Posible fraude: confírmalo antes de pagar");
+            else if (PanelIban.Visibility == Visibility.Visible)
+                Chip("IBAN nuevo para el proveedor", TipoAviso.Info, TxtIban);
+            else
+                Chip("✔ IBAN", TipoAviso.Ok, TxtIban);
+        }
+        else
+        {
+            Chip(FormaPagoActual == FormaPago.Tarjeta ? "Pago con tarjeta" : "Domiciliación", TipoAviso.Info, CmbFormaPago);
+        }
+
+        // Cuadre
+        if (_cuadra is null) Chip("⚠ Falta el total", TipoAviso.Atencion, TxtTotal);
+        else if (_cuadra == true) Chip("✔ Cuadra", TipoAviso.Ok, TxtTotal, "Bases + IVA + RE − IRPF = total");
+        else Chip("⚠ No cuadra", TipoAviso.Atencion, TxtTotal, TxtCuadre.Text);
+
+        // Datos dudosos
+        if (_dudosos.Count == 0) Chip("✔ Sin dudas de la IA", TipoAviso.Ok, null);
+        else Chip($"⚠ {_dudosos.Count} dato(s) dudoso(s) → siguiente", TipoAviso.Atencion, null,
+            "La IA no está segura de estos datos (en amarillo). Pulsa para ir al siguiente.", SiguienteDudoso);
+
+        // Mismo PDF ya subido
+        if (_pdf!.YaRegistradas.Count > 0)
+            Chip("⚠ Este PDF ya se subió", TipoAviso.Error, null,
+                string.Join("\n", _pdf.YaRegistradas.Select(f => f.Texto)));
+    }
+
+    /// <summary>Despliega su sección, lleva el campo a la vista y le da el foco.</summary>
+    private void IrACampo(Control campo)
+    {
+        foreach (var sec in new[] { SecProveedor, SecFactura, SecImportes, SecOtros })
+            if (sec.IsAncestorOf(campo)) sec.IsExpanded = true;
+        campo.Dispatcher.BeginInvoke(() =>
+        {
+            campo.BringIntoView();
+            campo.Focus();
+        }, System.Windows.Threading.DispatcherPriority.Loaded);
+    }
+
+    private void SiguienteDudoso()
+    {
+        if (_dudosos.Count == 0) return;
+        _dudosoActual = (_dudosoActual + 1) % _dudosos.Count;
+        IrACampo(_dudosos[_dudosoActual]);
     }
 
     /// <summary>Vuelca el formulario en la factura actual (para no perder cambios al navegar).</summary>
@@ -349,12 +514,18 @@ public partial class SubirFacturasView : UserControl
             c.ClearValue(BackgroundProperty);
             c.ClearValue(ToolTipProperty);
         }
+        _dudosos.Clear();
+        _dudosoActual = -1;
         foreach (var campo in campos)
         {
             if (!mapa.TryGetValue(campo, out var c)) continue;
             c.Background = FondoDudoso;
             c.ToolTip = "La IA no ha encontrado este dato o no está segura: revísalo.";
+            if (!_dudosos.Contains(c)) _dudosos.Add(c);
         }
+        // En el orden en que aparecen en el formulario
+        var orden = mapa.Values.Distinct().ToList();
+        _dudosos.Sort((a, b) => orden.IndexOf(a).CompareTo(orden.IndexOf(b)));
     }
 
     private void BtnAnterior_Click(object sender, RoutedEventArgs e) => _ = IrAAsync(_pdf!.Indice - 1);
@@ -553,6 +724,7 @@ public partial class SubirFacturasView : UserControl
         {
             PanelIban.Visibility = Visibility.Collapsed;
             ChkActualizarIban.IsChecked = false;
+            ActualizarResumen();
             return;
         }
 
@@ -575,6 +747,7 @@ public partial class SubirFacturasView : UserControl
             ChkActualizarIban.Content = "Actualizar el IBAN del proveedor con el de esta factura";
             ChkActualizarIban.IsChecked = false;
         }
+        ActualizarResumen();
     }
 
     // ------------------------------------------------------------------ Importes y páginas
@@ -588,19 +761,23 @@ public partial class SubirFacturasView : UserControl
     private void ActualizarCuadre()
     {
         TxtCuadre.Text = "";
-        if (!Formato.TryImporte(TxtTotal.Text, out var t) || t is null) return;
+        _cuadra = null;
+        if (!Formato.TryImporte(TxtTotal.Text, out var t) || t is null) { ActualizarResumen(); return; }
         Formato.TryImporte(TxtCuotaIrpf.Text, out var irpf);
         var calculado = Desglose.TotalBase + Desglose.TotalIva + Desglose.TotalRe - (irpf ?? 0);
         if (Math.Abs(calculado - t.Value) <= 0.02m)
         {
             TxtCuadre.Foreground = Tema.OkTexto;
             TxtCuadre.Text = "✔ Bases + IVA + RE − IRPF cuadra con el total";
+            _cuadra = true;
         }
         else
         {
             TxtCuadre.Foreground = Tema.AvisoTexto;
             TxtCuadre.Text = $"⚠ Bases + IVA + RE − IRPF = {Formato.Importe(calculado)} (no cuadra)";
+            _cuadra = false;
         }
+        ActualizarResumen();
     }
 
     private void Desglose_Cambiado(object? sender, EventArgs e) => ActualizarCuadre();
@@ -891,6 +1068,7 @@ public partial class SubirFacturasView : UserControl
     {
         PanelIA.Visibility = ocupado ? Visibility.Visible : Visibility.Collapsed;
         if (texto is not null) TxtIA.Text = texto;
+        if (ocupado) PanelResumen.Visibility = Visibility.Collapsed;
         var fr = _pdf?.Actual;
         var editable = !ocupado && fr?.Estado == EstadoRevision.Pendiente;
         Formulario.IsEnabled = editable;

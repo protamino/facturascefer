@@ -21,6 +21,7 @@ public partial class InicioView : UserControl
     public InicioView()
     {
         InitializeComponent();
+        TablaPersistente.Registrar(GridProximos, "inicio-proximos");
         // Se refresca cada vez que se entra en Inicio.
         IsVisibleChanged += (_, e) => { if (e.NewValue is true) _ = CargarAsync(); };
     }

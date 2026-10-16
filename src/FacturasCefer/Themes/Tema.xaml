@@ -208,6 +208,74 @@
         <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
     </Style>
 
+    <!-- Etiqueta-botón del resumen de revisión (Background/Foreground/BorderBrush se ponen desde código) -->
+    <Style x:Key="Chip" TargetType="Button">
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Margin" Value="0,0,6,6"/>
+        <Setter Property="Padding" Value="10,3,10,4"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Background" Value="{StaticResource NeutroFondo}"/>
+        <Setter Property="Foreground" Value="{StaticResource NeutroTexto}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Borde}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Marco" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="12" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Marco" Property="BorderBrush" Value="{StaticResource TextoSuave}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Sección plegable del formulario (cabecera con flecha; se recuerda si está plegada) -->
+    <Style x:Key="SeccionPlegable" TargetType="Expander">
+        <Setter Property="IsExpanded" Value="True"/>
+        <Setter Property="Margin" Value="0,12,0,0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Expander">
+                    <DockPanel>
+                        <ToggleButton DockPanel.Dock="Top" Focusable="False" Cursor="Hand"
+                                      IsChecked="{Binding IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Border Background="Transparent" BorderBrush="{StaticResource Borde}" BorderThickness="0,0,0,1" Padding="0,2,0,5">
+                                        <DockPanel>
+                                            <Path x:Name="Flecha" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="0,0,6,0"
+                                                  Data="M 0 4 L 4 0 L 8 4" Stroke="{StaticResource TextoSuave}" StrokeThickness="1.5"/>
+                                            <ContentPresenter Content="{Binding Header, RelativeSource={RelativeSource AncestorType=Expander}}"
+                                                              TextElement.FontSize="14" TextElement.FontWeight="SemiBold"
+                                                              TextElement.Foreground="{StaticResource Texto}"/>
+                                        </DockPanel>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsChecked" Value="False">
+                                            <Setter TargetName="Flecha" Property="Data" Value="M 0 0 L 4 4 L 8 0"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
+                        <ContentPresenter x:Name="Contenido" Margin="0,2,0,0" Visibility="Collapsed"/>
+                    </DockPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsExpanded" Value="True">
+                            <Setter TargetName="Contenido" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- ===================================================== Botones -->
     <Style TargetType="Button">
         <Setter Property="Background" Value="{StaticResource Superficie}"/>

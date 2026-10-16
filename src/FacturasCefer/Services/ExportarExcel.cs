@@ -29,13 +29,15 @@ public static class ExportarExcel
             Title = "Exportar a Excel",
             Filter = "Libro de Excel (*.xlsx)|*.xlsx",
             FileName = $"{DateTime.Today:yyyy-MM-dd}-{nombre}.xlsx",
-            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            InitialDirectory = Preferencias.Actual.CarpetaExcel is { } c && Directory.Exists(c)
+                ? c : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
         };
         if (dlg.ShowDialog(owner) != true) return;
 
         try
         {
             Escribir(grid, nombre, dlg.FileName);
+            Preferencias.Actual.CarpetaExcel = Path.GetDirectoryName(dlg.FileName);
         }
         catch (IOException ex)
         {

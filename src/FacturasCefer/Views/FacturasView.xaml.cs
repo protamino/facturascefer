@@ -31,6 +31,8 @@ public partial class FacturasView : UserControl
     public FacturasView()
     {
         InitializeComponent();
+        TablaPersistente.Registrar(Grid, "facturas");
+        RestaurarFiltros();
         _debounce.Tick += (_, _) => { _debounce.Stop(); _ = CargarAsync(); };
         // Al entrar en la pestaña se refresca (puede haber facturas nuevas subidas en la otra).
         IsVisibleChanged += async (_, e) =>
@@ -81,6 +83,36 @@ public partial class FacturasView : UserControl
         _cargandoProveedores = false;
         _debounce.Stop();
         if (IsVisible) await CargarAsync();
+    }
+
+    /// <summary>Filtros de la última sesión (estados, forma de pago, vencimiento, origen, revisar, campo de fecha).</summary>
+    private void RestaurarFiltros()
+    {
+        var p = Preferencias.Actual;
+        ChkRecibida.IsChecked = p.LeerBool("facturas.recibida") ?? true;
+        ChkValidada.IsChecked = p.LeerBool("facturas.validada") ?? true;
+        ChkPagada.IsChecked = p.LeerBool("facturas.pagada") ?? false;
+        ChkRechazada.IsChecked = p.LeerBool("facturas.rechazada") ?? false;
+        ChkRevisar.IsChecked = p.LeerBool("facturas.revisar") ?? false;
+        static int Indice(ComboBox c, int? i) => i is { } v && v >= 0 && v < c.Items.Count ? v : 0;
+        CmbFormaPago.SelectedIndex = Indice(CmbFormaPago, p.LeerInt("facturas.formapago"));
+        CmbVencimiento.SelectedIndex = Indice(CmbVencimiento, p.LeerInt("facturas.vencimiento"));
+        CmbOrigen.SelectedIndex = Indice(CmbOrigen, p.LeerInt("facturas.origen"));
+        CmbCampoFecha.SelectedIndex = Indice(CmbCampoFecha, p.LeerInt("facturas.campofecha"));
+    }
+
+    private void RecordarFiltros()
+    {
+        var p = Preferencias.Actual;
+        p.Poner("facturas.recibida", ChkRecibida.IsChecked == true);
+        p.Poner("facturas.validada", ChkValidada.IsChecked == true);
+        p.Poner("facturas.pagada", ChkPagada.IsChecked == true);
+        p.Poner("facturas.rechazada", ChkRechazada.IsChecked == true);
+        p.Poner("facturas.revisar", ChkRevisar.IsChecked == true);
+        p.Poner("facturas.formapago", CmbFormaPago.SelectedIndex);
+        p.Poner("facturas.vencimiento", CmbVencimiento.SelectedIndex);
+        p.Poner("facturas.origen", CmbOrigen.SelectedIndex);
+        p.Poner("facturas.campofecha", CmbCampoFecha.SelectedIndex);
     }
 
     /// <summary>Filtros por defecto: pendientes de pago, sin más criterios.</summary>
@@ -173,6 +205,7 @@ public partial class FacturasView : UserControl
         if (ChkValidada.IsChecked == true) f.Estados.Add(EstadoFactura.Validada);
         if (ChkPagada.IsChecked == true) f.Estados.Add(EstadoFactura.Pagada);
         if (ChkRechazada.IsChecked == true) f.Estados.Add(EstadoFactura.Rechazada);
+        RecordarFiltros();
         return f;
     }
 

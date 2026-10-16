@@ -74,12 +74,19 @@
                     </StackPanel>
                 </DockPanel>
 
+                <!-- Resumen: estado de cada comprobación (pulsar para ir al campo) -->
+                <WrapPanel x:Name="PanelResumen" DockPanel.Dock="Top" Margin="0,4,8,2" Visibility="Collapsed"/>
+
                 <!-- Progreso IA -->
                 <Border x:Name="PanelIA" DockPanel.Dock="Top" Visibility="Collapsed" Style="{StaticResource AvisoInfo}" Margin="0,4,8,4">
-                    <StackPanel>
-                        <TextBlock x:Name="TxtIA" Text="Leyendo la factura con IA…"/>
-                        <ProgressBar IsIndeterminate="True" Height="4" Margin="0,6,0,0"/>
-                    </StackPanel>
+                    <DockPanel>
+                        <Button x:Name="BtnCancelarIA" DockPanel.Dock="Right" Content="Cancelar" Click="BtnCancelarIA_Click"
+                                VerticalAlignment="Center" Margin="10,0,0,0" ToolTip="Dejar de leer este PDF y rellenar los datos a mano"/>
+                        <StackPanel>
+                            <TextBlock x:Name="TxtIA" Text="Leyendo la factura con IA…"/>
+                            <ProgressBar IsIndeterminate="True" Height="4" Margin="0,6,0,0"/>
+                        </StackPanel>
+                    </DockPanel>
                 </Border>
 
                 <!-- Aviso general (errores IA, sin facturas…) -->
@@ -97,15 +104,15 @@
                             Style="{StaticResource BotonPeligro}"
                             ToolTip="Descarta todas las facturas pendientes de este PDF"/>
                     <Button x:Name="BtnGuardar" DockPanel.Dock="Right" Content="Guardar factura" MinWidth="140"
-                            Style="{StaticResource BotonPrimario}" Click="BtnGuardar_Click"/>
+                            Style="{StaticResource BotonPrimario}" Click="BtnGuardar_Click" ToolTip="Guardar esta factura (Ctrl+S)"/>
                     <Button x:Name="BtnDescartar" DockPanel.Dock="Right" Content="Descartar factura" Margin="0,0,8,0"
                             Click="BtnDescartar_Click"/>
                 </DockPanel>
 
                 <ScrollViewer x:Name="Formulario" VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
                     <StackPanel>
-                        <!-- Proveedor -->
-                        <TextBlock Text="Proveedor" Style="{StaticResource Seccion}" Margin="0,8,0,4"/>
+                        <Expander x:Name="SecProveedor" Header="Proveedor" Style="{StaticResource SeccionPlegable}" Margin="0,4,0,0">
+                        <StackPanel>
                         <TextBlock Text="CIF / NIF del proveedor *" Style="{StaticResource Etiqueta}"/>
                         <DockPanel>
                             <Button DockPanel.Dock="Right" Content="Buscar" Click="BtnBuscarProveedor_Click" Margin="6,0,0,0"/>
@@ -160,7 +167,11 @@
                         </Grid>
 
                         <!-- Factura -->
-                        <TextBlock Text="Factura" Style="{StaticResource Seccion}"/>
+                        </StackPanel>
+                        </Expander>
+
+                        <Expander x:Name="SecFactura" Header="Factura" Style="{StaticResource SeccionPlegable}">
+                        <StackPanel>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -189,7 +200,11 @@
                         <CheckBox x:Name="ChkCuentaDefecto" Visibility="Collapsed" Margin="0,4,0,0" IsChecked="True"/>
 
                         <!-- Importes -->
-                        <TextBlock Text="Importes (€)" Style="{StaticResource Seccion}"/>
+                        </StackPanel>
+                        </Expander>
+
+                        <Expander x:Name="SecImportes" Header="Importes (€)" Style="{StaticResource SeccionPlegable}">
+                        <StackPanel>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -224,8 +239,11 @@
                                        Margin="0,0,0,4" TextWrapping="Wrap"/>
                         </Grid>
 
-                        <!-- Páginas y observaciones -->
-                        <TextBlock Text="Otros" Style="{StaticResource Seccion}"/>
+                        </StackPanel>
+                        </Expander>
+
+                        <Expander x:Name="SecOtros" Header="Páginas y observaciones" Style="{StaticResource SeccionPlegable}">
+                        <StackPanel>
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="Páginas del PDF: de" VerticalAlignment="Center" Margin="0,0,6,0"/>
                             <TextBox x:Name="TxtPagDesde" Width="45" TextAlignment="Center" LostFocus="Paginas_LostFocus"/>
@@ -236,6 +254,9 @@
                         <TextBlock Text="Observaciones" Style="{StaticResource Etiqueta}"/>
                         <TextBox x:Name="TxtObservaciones" Height="60" AcceptsReturn="True" TextWrapping="Wrap"
                                  VerticalContentAlignment="Top"/>
+
+                        </StackPanel>
+                        </Expander>
 
                         <TextBlock x:Name="TxtError" Style="{StaticResource TextoError}" Margin="0,10,0,0"/>
                     </StackPanel>

@@ -23,6 +23,7 @@ public partial class ImportacionesView : UserControl
     public ImportacionesView()
     {
         InitializeComponent();
+        TablaPersistente.Registrar(Grid, "importaciones");
         DpDesde.SelectedDate = DateTime.Today.AddDays(-30);
         _debounce.Tick += (_, _) => { _debounce.Stop(); _ = CargarAsync(); };
         IsVisibleChanged += (_, e) => { if (e.NewValue is true) _ = CargarAsync(); };

@@ -64,8 +64,9 @@ public partial class ExportarA3Dialog : Window
         var inicioMes = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
         DpDesde.SelectedDate = inicioMes.AddMonths(-1);
         DpHasta.SelectedDate = inicioMes.AddDays(-1);
-        TxtRuta.Text = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-            $"{DateTime.Today:yyyy-MM-dd}-A3-facturas-recibidas.csv");
+        var carpeta = Services.Preferencias.Actual.CarpetaA3 is { } c && Directory.Exists(c)
+            ? c : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        TxtRuta.Text = Path.Combine(carpeta, $"{DateTime.Today:yyyy-MM-dd}-A3-facturas-recibidas.csv");
         Loaded += async (_, _) => await BuscarAsync();
     }
 
@@ -173,6 +174,7 @@ public partial class ExportarA3Dialog : Window
         try
         {
             var r = await App.ExportacionA3.ExportarAsync(sel, ruta, App.Usuario.IdUsuario);
+            Services.Preferencias.Actual.CarpetaA3 = Path.GetDirectoryName(r.Archivo);
             if (MessageBox.Show(this,
                     $"Exportación generada:\n{r.Archivo}\n\n{r.Facturas} factura(s), {r.Filas} fila(s).\n\n¿Abrir la carpeta?",
                     "Exportar a A3", MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes)

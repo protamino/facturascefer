@@ -7,6 +7,7 @@ Propiedades → Detalles del `.exe`. Se define en `src/FacturasCefer/FacturasCef
 
 | Versión | Fecha | Cambios |
 |---|---|---|
+| 1.10.0 | 2026-10-16 | Revisión de facturas: resumen de comprobaciones (proveedor, IBAN, cuadre, datos dudosos, PDF repetido) con salto al campo, secciones plegables, Ctrl+S para guardar; lectura con IA del siguiente PDF en segundo plano y botón Cancelar; preferencias por usuario (ventana, columnas y orden de las tablas, filtros del listado, secciones, carpetas de exportación). Sin cambios en BD ni en el importador |
 | 1.9.0 | 2026-10-16 | Auditoría de cambios de datos de las facturas (usuario, antes → después) en el historial de la ficha, confirmación antifraude al cambiar el IBAN de una factura, detección de duplicados (mismo PDF, nº escrito de otra forma, misma fecha e importe) en la subida manual y en el importador — requiere `sql/2026-10-16-auditoria-duplicados.sql` y el importador 1.9.0 |
 | 1.8.0 | 2026-10-16 | Inicio (cifras, próximos pagos, gasto por mes), filtro y aviso de vencimientos (≤ 7 días), plazo de pago por proveedor, pantalla Importaciones con estado del servicio, exportar a Excel — requiere `sql/2026-10-16-inicio-vencimientos-importador.sql` y el importador 1.8.0 |
 | 1.7.0 | 2026-10-16 | Nuevo diseño con los colores de BANCOSEMEN (barra lateral, estados en pastillas, pantalla de acceso), indicador de carga y mensaje de lista vacía, avisos no bloqueantes, registro de errores acumulativo |

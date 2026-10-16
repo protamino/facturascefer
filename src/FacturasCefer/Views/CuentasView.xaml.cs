@@ -5,6 +5,7 @@ using System.Windows.Threading;
 using FacturasCefer.Controls;
 using FacturasCefer.Dialogs;
 using FacturasCefer.Models;
+using FacturasCefer.Services;
 
 namespace FacturasCefer.Views;
 
@@ -17,6 +18,7 @@ public partial class CuentasView : UserControl
     public CuentasView()
     {
         InitializeComponent();
+        TablaPersistente.Registrar(Grid, "cuentas");
         _debounce.Tick += (_, _) => { _debounce.Stop(); _ = CargarAsync(); };
         IsVisibleChanged += (_, e) => { if (e.NewValue is true) _ = CargarAsync(Seleccionada?.Codigo); };
         ActualizarBotones();

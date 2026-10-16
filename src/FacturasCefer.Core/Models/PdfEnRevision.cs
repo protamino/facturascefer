@@ -46,6 +46,12 @@ public sealed class PdfEnRevision
     public int Indice { get; set; }
     public OriginalGuardado Original { get; } = new();
 
+    /// <summary>Lectura con IA lanzada en segundo plano mientras se revisaba el PDF anterior (null = no lanzada).</summary>
+    public Task<List<FacturaExtraida>>? Prelectura { get; set; }
+
+    /// <summary>Permite cancelar la lectura con IA de este PDF.</summary>
+    public CancellationTokenSource Cancelacion { get; set; } = new();
+
     /// <summary>Huella SHA-256 del PDF (para detectar el mismo fichero subido otra vez).</summary>
     public string? Huella { get; set; }
 

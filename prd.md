@@ -92,6 +92,21 @@ Claude devuelve un JSON con una **lista de facturas** encontradas en el PDF. Por
 - Si el proveedor aún no tiene cuenta por defecto, la revisión ofrece guardar la elegida como tal.
 - La cuenta se puede cambiar en cualquier estado (también en Pagadas, p. ej. las de tarjeta) y en bloque desde el listado («Asignar cuenta…»).
 
+### 4.4 quater Revisión ágil (1.10.0)
+
+- Resumen arriba del formulario con una etiqueta por comprobación (✔ verde / ⚠ ámbar / rojo): proveedor, IBAN
+  (válido, distinto al del proveedor, nuevo), cuadre, datos dudosos de la IA y PDF ya subido. Pulsar una etiqueta lleva al
+  campo (la de dudosos recorre los campos en amarillo uno a uno).
+- Secciones plegables (Proveedor, Factura, Importes, Páginas y observaciones); se recuerda cuáles están plegadas.
+- Ctrl+S guarda la factura.
+- Mientras se revisa un PDF, el siguiente de la cola se lee con IA en segundo plano; la lectura en curso se puede cancelar.
+
+### 4.4 quinquies Preferencias
+
+`%APPDATA%\FacturasCefer\preferencias.json` (por usuario de Windows): tamaño y posición de la ventana, orden y ancho de
+columnas y orden de filas de cada tabla, filtros del listado de facturas, secciones plegadas, últimas carpetas de
+exportación a A3 y a Excel. Si falta o está dañado se usan los valores por defecto.
+
 ### 4.5 Emparejado de proveedor
 
 1. Buscar por **CIF** en `Proveedor`.
