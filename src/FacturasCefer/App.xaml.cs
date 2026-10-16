@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.IO;
 using System.Windows;
+using System.Windows.Documents;
 using System.Windows.Markup;
 using System.Windows.Threading;
 using FacturasCefer.Config;
@@ -39,6 +40,12 @@ public partial class App : Application
         FrameworkElement.LanguageProperty.OverrideMetadata(typeof(FrameworkElement),
             new FrameworkPropertyMetadata(XmlLanguage.GetLanguage(es.IetfLanguageTag)));
 
+        // Letra y color de texto del tema (Segoe UI 13, como BANCOSEMEN) en todas las ventanas.
+        TextElement.FontSizeProperty.OverrideMetadata(typeof(Window),
+            new FrameworkPropertyMetadata(13.0, FrameworkPropertyMetadataOptions.Inherits));
+        TextElement.FontFamilyProperty.OverrideMetadata(typeof(Window),
+            new FrameworkPropertyMetadata(new System.Windows.Media.FontFamily("Segoe UI"), FrameworkPropertyMetadataOptions.Inherits));
+
         // Evitar que la app se cierre al cerrarse el diálogo de login antes de abrir la principal.
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
@@ -75,28 +82,60 @@ public partial class App : Application
         }
     }
 
-    /// <summary>Escribe la excepción en %TEMP%\FacturasCefer\{nombre}.</summary>
+    /// <summary>
+    /// Añade la excepción (con fecha y usuario) a %TEMP%\FacturasCefer\{nombre}. Se acumula; al pasar de 2 MB
+    /// el fichero se renombra a .old y empieza de nuevo.
+    /// </summary>
     public static void Log(string nombre, Exception ex)
     {
         try
         {
             var log = Path.Combine(Path.GetTempPath(), "FacturasCefer", nombre);
             Directory.CreateDirectory(Path.GetDirectoryName(log)!);
-            File.WriteAllText(log, ex.ToString());
+            if (File.Exists(log) && new FileInfo(log).Length > 2 * 1024 * 1024)
+                File.Move(log, log + ".old", overwrite: true);
+            File.AppendAllText(log,
+                $"===== {DateTime.Now:yyyy-MM-dd HH:mm:ss} · v{Version} · {Usuario?.NombreUser ?? "-"}{Environment.NewLine}{ex}{Environment.NewLine}{Environment.NewLine}");
         }
         catch { /* ignore */ }
     }
 
-    /// <summary>Muestra un error: los de negocio tal cual, el resto con su tipo y registrados en el log.</summary>
+    /// <summary>
+    /// Aviso no bloqueante (banner en la esquina de la ventana principal). Si la ventana principal no está
+    /// visible o el aviso viene de un diálogo, se muestra como mensaje normal.
+    /// </summary>
+    public static void Notificar(string texto, TipoAviso tipo = TipoAviso.Ok, Window? owner = null)
+    {
+        if (Current.MainWindow is MainWindow mw && mw.IsVisible && (owner is null || owner == mw))
+        {
+            mw.Notificar(texto, tipo);
+            return;
+        }
+        MessageBox.Show(owner ?? Current.MainWindow!, texto, "FacturasCefer", MessageBoxButton.OK, tipo switch
+        {
+            TipoAviso.Error => MessageBoxImage.Error,
+            TipoAviso.Atencion => MessageBoxImage.Warning,
+            _ => MessageBoxImage.Information,
+        });
+    }
+
+    /// <summary>Muestra un error: los de negocio como aviso, el resto con una explicación y registrados en el log.</summary>
     public static void MostrarError(Exception ex, Window? owner = null)
     {
         if (ex is ReglaNegocioException)
         {
-            MessageBox.Show(owner ?? Current.MainWindow!, ex.Message, "Aviso", MessageBoxButton.OK, MessageBoxImage.Warning);
+            Notificar(ex.Message, TipoAviso.Atencion, owner);
             return;
         }
         Log("app-error.log", ex);
-        MessageBox.Show(owner ?? Current.MainWindow!, ex.GetType().Name + ": " + ex.Message, "Error",
+        var texto = ex switch
+        {
+            Microsoft.Data.SqlClient.SqlException => "No se ha podido completar la operación en la base de datos.\n\n" + ex.Message,
+            IOException or UnauthorizedAccessException => "No se ha podido acceder al fichero o a la carpeta de red.\n\n" + ex.Message,
+            System.Net.Http.HttpRequestException or TaskCanceledException => "No se ha podido conectar con el servicio externo (¿hay conexión a internet?).\n\n" + ex.Message,
+            _ => ex.Message,
+        };
+        MessageBox.Show(owner ?? Current.MainWindow!, texto + "\n\n(Detalle guardado en el registro de errores.)", "Error",
             MessageBoxButton.OK, MessageBoxImage.Error);
     }
 

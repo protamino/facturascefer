@@ -1,39 +1,51 @@
 <Window x:Class="FacturasCefer.LoginWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="FacturasCefer — Acceso" Height="380" Width="400"
-        WindowStartupLocation="CenterScreen" ResizeMode="CanResize">
-    <Grid Margin="24">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+        Title="FacturasCefer — Acceso" Height="460" Width="820"
+        WindowStartupLocation="CenterScreen" ResizeMode="NoResize" Background="White">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
 
-        <TextBlock Grid.Row="0" Text="FacturasCefer" FontSize="22" FontWeight="Bold"/>
-        <StackPanel Grid.Row="1" Margin="0,0,0,16">
-            <TextBlock Text="Registro de facturas de proveedores" Foreground="Gray"/>
-            <TextBlock x:Name="TxtVersion" Foreground="#999" FontSize="11" Margin="0,2,0,0"/>
+        <!-- Panel de marca: degradado rojo CEFER con círculos decorativos -->
+        <Grid ClipToBounds="True">
+            <Grid.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="{StaticResource ColorRojoOscuro}" Offset="0"/>
+                    <GradientStop Color="{StaticResource ColorRojo}" Offset="0.55"/>
+                    <GradientStop Color="{StaticResource ColorRojoClaro}" Offset="1"/>
+                </LinearGradientBrush>
+            </Grid.Background>
+            <Ellipse Width="320" Height="320" Stroke="White" StrokeThickness="1.5" Opacity="0.12"
+                     HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-110,-120,0"/>
+            <Ellipse Width="220" Height="220" Stroke="White" StrokeThickness="1.5" Opacity="0.10"
+                     HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="-70,0,0,-80"/>
+            <StackPanel VerticalAlignment="Center" Margin="44,0">
+                <Image Source="pack://application:,,,/FacturasCefer;component/Assets/logo-cefer-on-dark.png" Height="52" HorizontalAlignment="Left"
+                       RenderOptions.BitmapScalingMode="HighQuality"/>
+                <TextBlock Text="Facturas de proveedores" Foreground="White" FontSize="24" FontWeight="SemiBold" Margin="0,28,0,0"/>
+                <TextBlock Text="Registro, control y pago de facturas recibidas" Foreground="#CCFFFFFF" Margin="0,6,0,0"/>
+                <TextBlock x:Name="TxtVersion" Foreground="#99FFFFFF" FontSize="12" Margin="0,18,0,0"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Formulario -->
+        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="48,0">
+            <TextBlock Text="Iniciar sesión" Style="{StaticResource TituloPagina}"/>
+            <TextBlock Text="Usa tu usuario y contraseña de la historia clínica." Style="{StaticResource SubtituloPagina}" Margin="0,4,0,18"/>
+
+            <TextBlock Text="Usuario" Style="{StaticResource Etiqueta}"/>
+            <TextBox x:Name="TxtUsuario" Height="34"/>
+
+            <TextBlock Text="Contraseña" Style="{StaticResource Etiqueta}" Margin="0,12,0,3"/>
+            <PasswordBox x:Name="TxtPassword" Height="34" KeyDown="TxtPassword_KeyDown"/>
+
+            <TextBlock x:Name="TxtError" Style="{StaticResource TextoError}" Margin="0,12,0,0"/>
+
+            <Button x:Name="BtnEntrar" Content="Entrar" Height="36" Margin="0,16,0,0" Style="{StaticResource BotonPrimario}"
+                    Click="BtnEntrar_Click" IsDefault="True"/>
         </StackPanel>
-
-        <StackPanel Grid.Row="2" Margin="0,0,0,8">
-            <TextBlock Text="Usuario"/>
-            <TextBox x:Name="TxtUsuario" Height="28"/>
-        </StackPanel>
-
-        <StackPanel Grid.Row="3">
-            <TextBlock Text="Contraseña"/>
-            <PasswordBox x:Name="TxtPassword" Height="28" VerticalContentAlignment="Center"
-                         KeyDown="TxtPassword_KeyDown"/>
-        </StackPanel>
-
-        <TextBlock x:Name="TxtError" Grid.Row="4" Foreground="#C0392B" TextWrapping="Wrap"
-                   Margin="0,12,0,0" VerticalAlignment="Top"/>
-
-        <Button x:Name="BtnEntrar" Grid.Row="5" Content="Entrar" Height="34"
-                Click="BtnEntrar_Click" IsDefault="True"/>
     </Grid>
 </Window>

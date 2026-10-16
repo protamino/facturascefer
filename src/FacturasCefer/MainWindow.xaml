@@ -2,29 +2,89 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:FacturasCefer.Views"
-        Title="FacturasCefer" Height="800" Width="1300" MinHeight="560" MinWidth="960"
-        WindowStartupLocation="CenterScreen" Closing="Window_Closing">
-    <DockPanel>
-        <Border DockPanel.Dock="Top" Background="#F4F6F8" BorderBrush="#DDD" BorderThickness="0,0,0,1" Padding="16,10">
+        Title="FacturasCefer" Height="820" Width="1360" MinHeight="580" MinWidth="1040"
+        WindowStartupLocation="CenterScreen" Closing="Window_Closing"
+        Background="{StaticResource Fondo}" Foreground="{StaticResource Texto}">
+    <Window.Resources>
+        <!-- Icono (Segoe MDL2 Assets) + texto de cada sección de la barra lateral -->
+        <Style x:Key="Icono" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Width" Value="28"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="240"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- ============ Barra lateral -->
+        <Border Background="{StaticResource LateralFondo}">
             <DockPanel>
-                <TextBlock x:Name="TxtUsuario" DockPanel.Dock="Right" VerticalAlignment="Center" Foreground="#555"/>
-                <TextBlock Text="FacturasCefer" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+                <StackPanel DockPanel.Dock="Top" Margin="20,22,20,18">
+                    <Image Source="pack://application:,,,/FacturasCefer;component/Assets/logo-cefer-on-dark.png" Height="32" HorizontalAlignment="Left" Margin="0,0,0,12"
+                           RenderOptions.BitmapScalingMode="HighQuality"/>
+                    <TextBlock Text="Facturas de proveedores" Foreground="White" FontWeight="SemiBold" FontSize="14"/>
+                    <TextBlock Text="Registro, control y pago" Foreground="{StaticResource LateralTexto}" FontSize="12" Margin="0,2,0,0"/>
+                </StackPanel>
+
+                <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource LateralLinea}" BorderThickness="0,1,0,0" Padding="20,14">
+                    <StackPanel>
+                        <TextBlock x:Name="TxtUsuario" Foreground="White" FontWeight="Medium" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock x:Name="TxtVersion" Foreground="{StaticResource LateralTexto}" FontSize="12" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <Border BorderBrush="{StaticResource LateralLinea}" BorderThickness="0,1,0,0" Padding="12,14">
+                    <StackPanel>
+                        <RadioButton x:Name="NavSubir" Style="{StaticResource ItemLateral}" GroupName="Nav" Checked="Nav_Checked" IsChecked="True">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icono}" Text="&#xE898;"/>
+                                <TextBlock Text="Subir facturas"/>
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton x:Name="NavFacturas" Style="{StaticResource ItemLateral}" GroupName="Nav" Checked="Nav_Checked">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icono}" Text="&#xE8A5;"/>
+                                <TextBlock Text="Facturas"/>
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton x:Name="NavProveedores" Style="{StaticResource ItemLateral}" GroupName="Nav" Checked="Nav_Checked">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icono}" Text="&#xE716;"/>
+                                <TextBlock Text="Proveedores"/>
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton x:Name="NavCuentas" Style="{StaticResource ItemLateral}" GroupName="Nav" Checked="Nav_Checked">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icono}" Text="&#xE8EF;"/>
+                                <TextBlock Text="Cuentas contables"/>
+                            </StackPanel>
+                        </RadioButton>
+                    </StackPanel>
+                </Border>
             </DockPanel>
         </Border>
 
-        <TabControl x:Name="Tabs" Margin="8" Padding="8">
-            <TabItem Header="Subir facturas">
+        <!-- ============ Contenido -->
+        <DockPanel Grid.Column="1" Margin="28,22,28,20">
+            <StackPanel DockPanel.Dock="Top" Margin="0,0,0,16">
+                <TextBlock x:Name="TxtTitulo" Style="{StaticResource TituloPagina}"/>
+                <TextBlock x:Name="TxtSubtitulo" Style="{StaticResource SubtituloPagina}"/>
+            </StackPanel>
+            <Grid>
                 <views:SubirFacturasView x:Name="Subir"/>
-            </TabItem>
-            <TabItem x:Name="TabFacturas" Header="Facturas">
-                <views:FacturasView x:Name="Facturas"/>
-            </TabItem>
-            <TabItem Header="Proveedores">
-                <views:ProveedoresView x:Name="Proveedores" VerFacturas="Proveedores_VerFacturas"/>
-            </TabItem>
-            <TabItem Header="Cuentas contables">
-                <views:CuentasView/>
-            </TabItem>
-        </TabControl>
-    </DockPanel>
+                <views:FacturasView x:Name="Facturas" Visibility="Collapsed"/>
+                <views:ProveedoresView x:Name="Proveedores" Visibility="Collapsed" VerFacturas="Proveedores_VerFacturas"/>
+                <views:CuentasView x:Name="Cuentas" Visibility="Collapsed"/>
+            </Grid>
+        </DockPanel>
+
+        <!-- ============ Avisos no bloqueantes (abajo a la derecha) -->
+        <StackPanel x:Name="PanelAvisos" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                    Margin="0,0,24,20" Panel.ZIndex="100"/>
+    </Grid>
 </Window>

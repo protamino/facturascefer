@@ -5,8 +5,8 @@
         Title="Proveedor" Width="620" SizeToContent="Height" ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
     <StackPanel Margin="20">
-        <TextBlock x:Name="TxtAviso" Visibility="Collapsed" TextWrapping="Wrap" Padding="10,6" Margin="0,0,0,8"
-                   Background="#FFF4E5" Foreground="#8A5300"/>
+        <TextBlock x:Name="TxtAviso" Visibility="Collapsed" TextWrapping="Wrap" Padding="12,8" Margin="0,0,0,8"
+                   Background="{StaticResource AvisoFondo}" Foreground="{StaticResource AvisoTexto}"/>
 
         <Grid>
             <Grid.ColumnDefinitions>
@@ -110,10 +110,10 @@
             </StackPanel>
         </Grid>
 
-        <TextBlock x:Name="TxtError" Foreground="#C0392B" TextWrapping="Wrap" Margin="0,10,0,0"/>
+        <TextBlock x:Name="TxtError" Style="{StaticResource TextoError}" Margin="0,10,0,0"/>
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-            <Button x:Name="BtnGuardar" Content="Guardar" IsDefault="True" Margin="0,0,8,0" MinWidth="90"
+            <Button x:Name="BtnGuardar" Content="Guardar" IsDefault="True" Style="{StaticResource BotonPrimario}" Margin="0,0,8,0" MinWidth="90"
                     Click="BtnGuardar_Click"/>
             <Button Content="Cancelar" IsCancel="True" MinWidth="90"/>
         </StackPanel>

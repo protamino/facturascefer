@@ -27,12 +27,14 @@ public partial class CuentasView : UserControl
     private async Task CargarAsync(string? seleccionar = null)
     {
         var carga = ++_cargaActual;
+        Estado.Cargando = true;
         try
         {
             var lista = await App.Cuentas.BuscarAsync(TxtBuscar.Text, ChkBajas.IsChecked == true);
             if (carga != _cargaActual) return;
             Grid.ItemsSource = lista;
             TxtContador.Text = $"{lista.Count} cuenta(s)";
+            Estado.Vacio = lista.Count == 0;
             if (seleccionar is not null && lista.FirstOrDefault(c => c.Codigo == seleccionar) is { } c)
             {
                 Grid.SelectedItem = c;
@@ -42,6 +44,10 @@ public partial class CuentasView : UserControl
         catch (Exception ex)
         {
             App.MostrarError(ex, Window.GetWindow(this));
+        }
+        finally
+        {
+            if (carga == _cargaActual) Estado.Cargando = false;
         }
     }
 

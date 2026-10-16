@@ -213,9 +213,7 @@ public partial class FacturaDialog : Window
         Formato.TryImporte(TxtCuotaIrpf.Text, out var irpf);
         var calculado = Desglose.TotalBase + Desglose.TotalIva + Desglose.TotalRe - (irpf ?? 0);
         var ok = Math.Abs(calculado - t.Value) <= 0.02m;
-        TxtCuadre.Foreground = new System.Windows.Media.SolidColorBrush(ok
-            ? System.Windows.Media.Color.FromRgb(0x1B, 0x5E, 0x20)
-            : System.Windows.Media.Color.FromRgb(0x8A, 0x53, 0x00));
+        TxtCuadre.Foreground = ok ? Tema.OkTexto : Tema.AvisoTexto;
         TxtCuadre.Text = ok ? "✔ Cuadra con el total" : $"⚠ Bases + IVA + RE − IRPF = {Formato.Importe(calculado)} (no cuadra)";
     }
 

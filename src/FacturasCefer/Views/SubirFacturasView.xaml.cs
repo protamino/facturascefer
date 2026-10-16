@@ -19,7 +19,7 @@ namespace FacturasCefer.Views;
 /// </summary>
 public partial class SubirFacturasView : UserControl
 {
-    private static readonly Brush FondoDudoso = new SolidColorBrush(Color.FromRgb(0xFF, 0xF3, 0xC4));
+    private static Brush FondoDudoso => Tema.DudosoFondo;
 
     private readonly Queue<PdfEnRevision> _cola = new();
     private PdfEnRevision? _pdf;
@@ -56,9 +56,8 @@ public partial class SubirFacturasView : UserControl
     {
         if (e.Data.GetData(DataFormats.FileDrop) is string[] rutas) AgregarArchivos(rutas);
         else
-            MessageBox.Show(Window.GetWindow(this),
-                "Solo se pueden soltar ficheros. Si arrastras un adjunto desde Outlook, guárdalo antes en una carpeta.",
-                "Subir facturas", MessageBoxButton.OK, MessageBoxImage.Information);
+            App.Notificar("Solo se pueden soltar ficheros. Si arrastras un adjunto desde Outlook, guárdalo antes en una carpeta.",
+                TipoAviso.Atencion);
     }
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
@@ -104,9 +103,8 @@ public partial class SubirFacturasView : UserControl
         }
 
         if (rechazados.Count > 0)
-            MessageBox.Show(Window.GetWindow(this),
-                "Solo se admiten ficheros PDF. No se han añadido:\n\n" + string.Join("\n", rechazados),
-                "Subir facturas", MessageBoxButton.OK, MessageBoxImage.Warning);
+            App.Notificar("Solo se admiten ficheros PDF. No se han añadido:\n" + string.Join("\n", rechazados),
+                TipoAviso.Atencion);
 
         ActualizarCola();
         if (_pdf is null) _ = SiguientePdfAsync();
@@ -384,15 +382,13 @@ public partial class SubirFacturasView : UserControl
         var razonIa = _pdf?.Actual?.Ia.ProveedorRazonSocial;
         if (p is not null)
         {
-            PanelProveedor.Background = new SolidColorBrush(Color.FromRgb(0xE8, 0xF5, 0xE9));
-            TxtProveedor.Foreground = new SolidColorBrush(Color.FromRgb(0x1B, 0x5E, 0x20));
+            PanelProveedor.Style = Tema.EstiloAviso(p.Baja ? TipoAviso.Atencion : TipoAviso.Ok);
             TxtProveedor.Text = $"✔ {p.RazonSocial} ({p.CIF})" + (p.Baja ? " — DADO DE BAJA" : "");
             BtnAltaProveedor.Visibility = Visibility.Collapsed;
         }
         else
         {
-            PanelProveedor.Background = new SolidColorBrush(Color.FromRgb(0xFF, 0xF4, 0xE5));
-            TxtProveedor.Foreground = new SolidColorBrush(Color.FromRgb(0x8A, 0x53, 0x00));
+            PanelProveedor.Style = Tema.EstiloAviso(TipoAviso.Atencion);
             TxtProveedor.Text = cif.Length == 0
                 ? "Indica el CIF del proveedor" + (string.IsNullOrWhiteSpace(razonIa) ? "." : $" ({razonIa}).")
                 : $"Proveedor no registrado: {(string.IsNullOrWhiteSpace(razonIa) ? cif : $"{razonIa} ({cif})")}.";
@@ -538,16 +534,14 @@ public partial class SubirFacturasView : UserControl
         PanelIban.Visibility = Visibility.Visible;
         if (ibanProveedor.Length == 0)
         {
-            PanelIban.Background = new SolidColorBrush(Color.FromRgb(0xEE, 0xF4, 0xFB));
-            TxtIbanAviso.Foreground = Brushes.Black;
+            PanelIban.Style = Tema.EstiloAviso(TipoAviso.Info);
             TxtIbanAviso.Text = "El proveedor no tiene IBAN registrado.";
             ChkActualizarIban.Content = "Guardar este IBAN en la ficha del proveedor";
             ChkActualizarIban.IsChecked = Validaciones.IbanValido(ibanFactura);
         }
         else
         {
-            PanelIban.Background = new SolidColorBrush(Color.FromRgb(0xFD, 0xEC, 0xEA));
-            TxtIbanAviso.Foreground = new SolidColorBrush(Color.FromRgb(0x8B, 0x1A, 0x1A));
+            PanelIban.Style = Tema.EstiloAviso(TipoAviso.Error);
             TxtIbanAviso.Text =
                 "⚠ El IBAN de la factura NO coincide con el del proveedor.\n" +
                 $"Factura:     {Validaciones.FormatearIban(ibanFactura)}\n" +
@@ -574,12 +568,12 @@ public partial class SubirFacturasView : UserControl
         var calculado = Desglose.TotalBase + Desglose.TotalIva + Desglose.TotalRe - (irpf ?? 0);
         if (Math.Abs(calculado - t.Value) <= 0.02m)
         {
-            TxtCuadre.Foreground = new SolidColorBrush(Color.FromRgb(0x1B, 0x5E, 0x20));
+            TxtCuadre.Foreground = Tema.OkTexto;
             TxtCuadre.Text = "✔ Bases + IVA + RE − IRPF cuadra con el total";
         }
         else
         {
-            TxtCuadre.Foreground = new SolidColorBrush(Color.FromRgb(0x8A, 0x53, 0x00));
+            TxtCuadre.Foreground = Tema.AvisoTexto;
             TxtCuadre.Text = $"⚠ Bases + IVA + RE − IRPF = {Formato.Importe(calculado)} (no cuadra)";
         }
     }
@@ -757,6 +751,7 @@ public partial class SubirFacturasView : UserControl
             }
             fr.IdFactura = await App.Facturas.GuardarAsync(factura, pdf.RutaLocal, desde, hasta, pdf.Original, App.Usuario.IdUsuario);
             fr.Estado = EstadoRevision.Guardada;
+            App.Notificar($"Factura {numero} de {proveedor.RazonSocial} guardada.", TipoAviso.Ok);
         }
         catch (ReglaNegocioException ex)
         {

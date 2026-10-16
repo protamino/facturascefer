@@ -4,16 +4,6 @@
              xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
              xmlns:ctrl="clr-namespace:FacturasCefer.Controls"
              AllowDrop="True" DragOver="Zona_DragOver" Drop="Zona_Drop" Focusable="True">
-    <UserControl.Resources>
-        <Style x:Key="Seccion" TargetType="TextBlock">
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Margin" Value="0,14,0,2"/>
-            <Setter Property="Foreground" Value="#1F4E79"/>
-        </Style>
-        <Style x:Key="Importe" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
-            <Setter Property="TextAlignment" Value="Right"/>
-        </Style>
-    </UserControl.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
@@ -22,65 +12,70 @@
         </Grid.RowDefinitions>
 
         <!-- Caja de subida -->
-        <Border x:Name="ZonaSubida" Grid.Row="0" BorderBrush="#8AA9C8" BorderThickness="2" CornerRadius="6"
-                Background="#F3F7FB" Padding="14,10" Margin="0,0,0,8">
+        <Border x:Name="ZonaSubida" Grid.Row="0" BorderBrush="{StaticResource Rojo}" BorderThickness="2" CornerRadius="{StaticResource Radio}"
+                Background="{StaticResource RojoTinteSuave}" Padding="16,12" Margin="0,0,0,12">
             <DockPanel>
-                <Button DockPanel.Dock="Right" Content="Añadir PDF…" Click="BtnAnadir_Click" MinWidth="110"/>
+                <Button DockPanel.Dock="Right" Content="+ Añadir PDF…" Click="BtnAnadir_Click" MinWidth="120"
+                        Style="{StaticResource BotonPrimario}"/>
+                <TextBlock DockPanel.Dock="Left" Text="&#xE898;" FontFamily="Segoe MDL2 Assets" FontSize="22"
+                           Foreground="{StaticResource Rojo}" VerticalAlignment="Center" Margin="0,0,14,0"/>
                 <StackPanel VerticalAlignment="Center">
                     <TextBlock FontSize="14" FontWeight="SemiBold"
                                Text="Arrastra aquí los PDF de las facturas, pégalos con Ctrl+V o pulsa «Añadir PDF…»"/>
-                    <TextBlock x:Name="TxtCola" Foreground="#555" Margin="0,2,0,0"/>
+                    <TextBlock x:Name="TxtCola" Foreground="{StaticResource TextoSuave}" Margin="0,2,0,0"/>
                 </StackPanel>
             </DockPanel>
         </Border>
 
         <!-- Estado vacío -->
         <TextBlock x:Name="TxtVacio" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center"
-                   Foreground="Gray" FontSize="14" TextAlignment="Center"
+                   Foreground="{StaticResource TextoSuave}" FontSize="14" TextAlignment="Center"
                    Text="No hay facturas en revisión.&#x0a;Sube un PDF para empezar."/>
 
         <!-- Revisión -->
         <Grid x:Name="PanelRevision" Grid.Row="1" Visibility="Collapsed">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" MinWidth="300"/>
-                <ColumnDefinition Width="6"/>
-                <ColumnDefinition Width="460" MinWidth="380"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="480" MinWidth="400"/>
             </Grid.ColumnDefinitions>
 
             <!-- Visor -->
             <DockPanel Grid.Column="0">
-                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
+                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
                     <Button DockPanel.Dock="Right" Content="Abrir en visor externo" Click="BtnAbrirExterno_Click"/>
                     <TextBlock x:Name="TxtNombrePdf" VerticalAlignment="Center" FontWeight="SemiBold"
                                TextTrimming="CharacterEllipsis"/>
                 </DockPanel>
-                <Border BorderBrush="#CCC" BorderThickness="1">
+                <Border BorderBrush="{StaticResource Borde}" BorderThickness="1" CornerRadius="{StaticResource Radio}"
+                        Background="{StaticResource Superficie}" Padding="1">
                     <Grid>
                         <wv2:WebView2 x:Name="Visor"/>
                         <TextBlock x:Name="TxtVisorError" Visibility="Collapsed" TextWrapping="Wrap" Margin="16"
-                                   Foreground="#8A5300" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                   Foreground="{StaticResource AvisoTexto}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                     </Grid>
                 </Border>
             </DockPanel>
 
-            <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch" Background="Transparent"/>
+            <GridSplitter Grid.Column="1" Width="12" HorizontalAlignment="Stretch" Background="Transparent"/>
 
             <!-- Formulario -->
-            <DockPanel Grid.Column="2">
+            <Border Grid.Column="2" Style="{StaticResource Tarjeta}" Padding="16,12,8,12">
+            <DockPanel>
                 <!-- Barra de navegación entre facturas del PDF -->
-                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
+                <DockPanel DockPanel.Dock="Top" Margin="0,0,8,4">
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                         <Button x:Name="BtnAnterior" Content="◀" Click="BtnAnterior_Click" ToolTip="Factura anterior del PDF" Margin="0,0,4,0"/>
                         <Button x:Name="BtnSiguiente" Content="▶" Click="BtnSiguiente_Click" ToolTip="Factura siguiente del PDF"/>
                     </StackPanel>
                     <StackPanel>
-                        <TextBlock x:Name="TxtPosicion" FontSize="15" FontWeight="Bold"/>
-                        <TextBlock x:Name="TxtEstadoFactura" Foreground="#555"/>
+                        <TextBlock x:Name="TxtPosicion" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock x:Name="TxtEstadoFactura" Foreground="{StaticResource TextoSuave}"/>
                     </StackPanel>
                 </DockPanel>
 
                 <!-- Progreso IA -->
-                <Border x:Name="PanelIA" DockPanel.Dock="Top" Visibility="Collapsed" Background="#EEF4FB" Padding="10,8" Margin="0,4">
+                <Border x:Name="PanelIA" DockPanel.Dock="Top" Visibility="Collapsed" Style="{StaticResource AvisoInfo}" Margin="0,4,8,4">
                     <StackPanel>
                         <TextBlock x:Name="TxtIA" Text="Leyendo la factura con IA…"/>
                         <ProgressBar IsIndeterminate="True" Height="4" Margin="0,6,0,0"/>
@@ -88,20 +83,21 @@
                 </Border>
 
                 <!-- Aviso general (errores IA, sin facturas…) -->
-                <Border x:Name="PanelAviso" DockPanel.Dock="Top" Visibility="Collapsed" Background="#FFF4E5" Padding="10,8" Margin="0,4">
+                <Border x:Name="PanelAviso" DockPanel.Dock="Top" Visibility="Collapsed" Style="{StaticResource AvisoAtencion}" Margin="0,4,8,4">
                     <DockPanel>
                         <Button x:Name="BtnReintentarIA" DockPanel.Dock="Right" Content="Reintentar IA" Click="BtnReintentarIA_Click"
                                 VerticalAlignment="Top" Margin="8,0,0,0"/>
-                        <TextBlock x:Name="TxtAviso" TextWrapping="Wrap" Foreground="#8A5300"/>
+                        <TextBlock x:Name="TxtAviso" TextWrapping="Wrap"/>
                     </DockPanel>
                 </Border>
 
                 <!-- Botones -->
-                <DockPanel DockPanel.Dock="Bottom" Margin="0,8,0,0" LastChildFill="False">
+                <DockPanel DockPanel.Dock="Bottom" Margin="0,10,8,0" LastChildFill="False">
                     <Button x:Name="BtnDescartarPdf" DockPanel.Dock="Left" Content="Descartar PDF" Click="BtnDescartarPdf_Click"
+                            Style="{StaticResource BotonPeligro}"
                             ToolTip="Descarta todas las facturas pendientes de este PDF"/>
-                    <Button x:Name="BtnGuardar" DockPanel.Dock="Right" Content="Guardar factura" FontWeight="Bold" MinWidth="130"
-                            Click="BtnGuardar_Click"/>
+                    <Button x:Name="BtnGuardar" DockPanel.Dock="Right" Content="Guardar factura" MinWidth="140"
+                            Style="{StaticResource BotonPrimario}" Click="BtnGuardar_Click"/>
                     <Button x:Name="BtnDescartar" DockPanel.Dock="Right" Content="Descartar factura" Margin="0,0,8,0"
                             Click="BtnDescartar_Click"/>
                 </DockPanel>
@@ -109,13 +105,13 @@
                 <ScrollViewer x:Name="Formulario" VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
                     <StackPanel>
                         <!-- Proveedor -->
-                        <TextBlock Text="Proveedor" Style="{StaticResource Seccion}"/>
+                        <TextBlock Text="Proveedor" Style="{StaticResource Seccion}" Margin="0,8,0,4"/>
                         <TextBlock Text="CIF / NIF del proveedor *" Style="{StaticResource Etiqueta}"/>
                         <DockPanel>
                             <Button DockPanel.Dock="Right" Content="Buscar" Click="BtnBuscarProveedor_Click" Margin="6,0,0,0"/>
                             <TextBox x:Name="TxtCif" CharacterCasing="Upper" MaxLength="20" LostFocus="TxtCif_LostFocus"/>
                         </DockPanel>
-                        <Border x:Name="PanelProveedor" Padding="8,6" Margin="0,6,0,0" CornerRadius="3">
+                        <Border x:Name="PanelProveedor" Style="{StaticResource AvisoAtencion}" Margin="0,6,0,0">
                             <DockPanel>
                                 <Button x:Name="BtnAltaProveedor" DockPanel.Dock="Right" Content="Dar de alta…"
                                         Click="BtnAltaProveedor_Click" VerticalAlignment="Center" Margin="8,0,0,0"/>
@@ -124,20 +120,20 @@
                         </Border>
 
                         <TextBlock Text="Forma de pago" Style="{StaticResource Etiqueta}"/>
-                        <ComboBox x:Name="CmbFormaPago" Height="26" VerticalContentAlignment="Center"
+                        <ComboBox x:Name="CmbFormaPago"
                                   SelectionChanged="CmbFormaPago_SelectionChanged">
                             <ComboBoxItem Content="Transferencia"/>
                             <ComboBoxItem Content="Domiciliación (recibo a la cuenta de CEFER)"/>
                             <ComboBoxItem Content="Tarjeta (ya pagada)"/>
                         </ComboBox>
                         <TextBlock x:Name="TxtAvisoFormaPago" Visibility="Collapsed" TextWrapping="Wrap" Margin="0,4,0,0"
-                                   Foreground="#8A5300"/>
+                                   Foreground="{StaticResource AvisoTexto}"/>
 
                         <StackPanel x:Name="PanelIbanRev">
                             <TextBlock x:Name="LblIban" Text="IBAN del proveedor" Style="{StaticResource Etiqueta}"/>
                             <TextBox x:Name="TxtIban" CharacterCasing="Upper" MaxLength="42" FontFamily="Consolas"
                                      TextChanged="TxtIban_TextChanged"/>
-                            <Border x:Name="PanelIban" Visibility="Collapsed" Padding="8,6" Margin="0,6,0,0" CornerRadius="3">
+                            <Border x:Name="PanelIban" Visibility="Collapsed" Style="{StaticResource AvisoInfo}" Margin="0,6,0,0">
                                 <StackPanel>
                                     <TextBlock x:Name="TxtIbanAviso" TextWrapping="Wrap"/>
                                     <CheckBox x:Name="ChkActualizarIban" Margin="0,6,0,0"/>
@@ -154,7 +150,7 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0">
                                 <TextBlock Text="Tarjeta (marca y últimos 4 dígitos)" Style="{StaticResource Etiqueta}"/>
-                                <ComboBox x:Name="CmbTarjeta" IsEditable="True" Height="26" VerticalContentAlignment="Center"
+                                <ComboBox x:Name="CmbTarjeta" IsEditable="True"
                                           ToolTip="Ej.: VISA ···· 1234. Nunca se guarda el número completo."/>
                             </StackPanel>
                             <StackPanel Grid.Column="2">
@@ -235,16 +231,17 @@
                             <TextBox x:Name="TxtPagDesde" Width="45" TextAlignment="Center" LostFocus="Paginas_LostFocus"/>
                             <TextBlock Text="a" VerticalAlignment="Center" Margin="6,0"/>
                             <TextBox x:Name="TxtPagHasta" Width="45" TextAlignment="Center" LostFocus="Paginas_LostFocus"/>
-                            <TextBlock x:Name="TxtTotalPaginas" VerticalAlignment="Center" Margin="6,0,0,0" Foreground="#666"/>
+                            <TextBlock x:Name="TxtTotalPaginas" VerticalAlignment="Center" Margin="6,0,0,0" Foreground="{StaticResource TextoSuave}"/>
                         </StackPanel>
                         <TextBlock Text="Observaciones" Style="{StaticResource Etiqueta}"/>
-                        <TextBox x:Name="TxtObservaciones" Height="54" AcceptsReturn="True" TextWrapping="Wrap"
+                        <TextBox x:Name="TxtObservaciones" Height="60" AcceptsReturn="True" TextWrapping="Wrap"
                                  VerticalContentAlignment="Top"/>
 
-                        <TextBlock x:Name="TxtError" Foreground="#C0392B" TextWrapping="Wrap" Margin="0,10,0,0"/>
+                        <TextBlock x:Name="TxtError" Style="{StaticResource TextoError}" Margin="0,10,0,0"/>
                     </StackPanel>
                 </ScrollViewer>
             </DockPanel>
+            </Border>
         </Grid>
     </Grid>
 </UserControl>

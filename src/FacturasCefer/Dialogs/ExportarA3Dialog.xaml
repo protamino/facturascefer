@@ -4,17 +4,13 @@
         Title="Exportar facturas recibidas — a3ASESOR | con" Width="1150" Height="720" MinWidth="900" MinHeight="480"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
     <Window.Resources>
-        <Style x:Key="Der" TargetType="TextBlock">
-            <Setter Property="HorizontalAlignment" Value="Right"/>
-            <Setter Property="Margin" Value="0,0,4,0"/>
-        </Style>
-        <Style x:Key="FilaA3" TargetType="DataGridRow">
+        <Style x:Key="FilaA3" TargetType="DataGridRow" BasedOn="{StaticResource FilaTabla}">
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Nivel}" Value="Error">
-                    <Setter Property="Foreground" Value="#B71C1C"/>
+                    <Setter Property="Foreground" Value="{StaticResource ErrorTexto}"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Nivel}" Value="Aviso">
-                    <Setter Property="Foreground" Value="#8A5300"/>
+                    <Setter Property="Foreground" Value="{StaticResource AvisoTexto}"/>
                 </DataTrigger>
             </Style.Triggers>
         </Style>
@@ -35,7 +31,7 @@
             <Button Content="Buscar" MinWidth="90" Click="BtnBuscar_Click"/>
         </WrapPanel>
 
-        <TextBlock x:Name="TxtConfig" DockPanel.Dock="Top" Foreground="#666" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,6"/>
+        <TextBlock x:Name="TxtConfig" DockPanel.Dock="Top" Foreground="{StaticResource TextoSuave}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,6"/>
 
         <!-- Pie: destino y exportar -->
         <StackPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
@@ -54,11 +50,10 @@
             </DockPanel>
         </StackPanel>
 
-        <TextBlock x:Name="TxtResumen" DockPanel.Dock="Bottom" Margin="0,6,0,0" Foreground="#444"/>
+        <TextBlock x:Name="TxtResumen" DockPanel.Dock="Bottom" Margin="0,8,0,0" Foreground="{StaticResource TextoSuave}"/>
 
-        <DataGrid x:Name="Grid" AutoGenerateColumns="False" CanUserAddRows="False" HeadersVisibility="Column"
-                  GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#E5E5E5" SelectionMode="Extended"
-                  RowStyle="{StaticResource FilaA3}" RowHeight="24">
+        <DataGrid x:Name="Grid" Style="{StaticResource Tabla}" IsReadOnly="False" SelectionMode="Extended"
+                  RowStyle="{StaticResource FilaA3}">
             <DataGrid.Columns>
                 <DataGridTemplateColumn Header="Exp." Width="42">
                     <DataGridTemplateColumn.CellTemplate>
@@ -73,7 +68,7 @@
                 <DataGridTextColumn Header="Nº factura" Binding="{Binding Numero}" Width="120" IsReadOnly="True"/>
                 <DataGridTextColumn Header="Proveedor" Binding="{Binding Proveedor}" Width="*" IsReadOnly="True"/>
                 <DataGridTextColumn Header="Total" Binding="{Binding Total, StringFormat=N2}" Width="85" IsReadOnly="True"
-                                    ElementStyle="{StaticResource Der}"/>
+                                    ElementStyle="{StaticResource Derecha}"/>
                 <DataGridTextColumn Header="Filas" Binding="{Binding Filas}" Width="45" IsReadOnly="True"/>
                 <DataGridTextColumn Header="Exportada" Binding="{Binding Exportada, StringFormat=dd/MM/yyyy}" Width="80" IsReadOnly="True"/>
                 <DataGridTextColumn Header="Incidencias" Binding="{Binding TextoIncidencias}" Width="2*" IsReadOnly="True">

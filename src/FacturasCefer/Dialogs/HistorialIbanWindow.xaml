@@ -4,11 +4,11 @@
         Title="Historial de IBAN" Width="760" Height="360"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
     <DockPanel Margin="16">
-        <TextBlock x:Name="TxtTitulo" DockPanel.Dock="Top" FontWeight="Bold" Margin="0,0,0,8"/>
+        <TextBlock x:Name="TxtTitulo" DockPanel.Dock="Top" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,10"/>
         <Button DockPanel.Dock="Bottom" Content="Cerrar" IsCancel="True" HorizontalAlignment="Right"
                 MinWidth="90" Margin="0,8,0,0"/>
         <TextBlock x:Name="TxtVacio" DockPanel.Dock="Top" Text="Sin cambios de IBAN registrados."
-                   Foreground="Gray" Visibility="Collapsed"/>
+                   Foreground="{StaticResource TextoSuave}" Visibility="Collapsed"/>
         <DataGrid x:Name="Grid" Style="{StaticResource Tabla}">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Fecha" Binding="{Binding Fecha, StringFormat=dd/MM/yyyy HH:mm}" Width="120"/>

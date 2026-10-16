@@ -1,0 +1,20 @@
+<UserControl x:Class="FacturasCefer.Controls.EstadoLista"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Se coloca encima de una tabla: «Cargando…» mientras se consulta y un mensaje si no hay filas. -->
+    <Grid>
+        <Border x:Name="PanelCargando" Visibility="Collapsed" Background="#B3FFFFFF" CornerRadius="{StaticResource Radio}">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="200">
+                <TextBlock Text="Cargando…" Foreground="{StaticResource TextoSuave}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                <ProgressBar IsIndeterminate="True"/>
+            </StackPanel>
+        </Border>
+        <StackPanel x:Name="PanelVacio" Visibility="Collapsed" IsHitTestVisible="False"
+                    VerticalAlignment="Center" HorizontalAlignment="Center">
+            <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="28" Foreground="{StaticResource TextoTenue}"
+                       HorizontalAlignment="Center" Margin="0,0,0,8"/>
+            <TextBlock x:Name="TxtVacio" Foreground="{StaticResource TextoSuave}" HorizontalAlignment="Center" TextAlignment="Center"
+                       TextWrapping="Wrap" MaxWidth="360"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

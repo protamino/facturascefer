@@ -25,6 +25,7 @@ public partial class ProveedoresView : UserControl
     private async Task CargarAsync(int? seleccionarId = null)
     {
         var carga = ++_cargaActual;
+        Estado.Cargando = true;
         try
         {
             var lista = await App.Proveedores.BuscarAsync(TxtBuscar.Text, ChkBajas.IsChecked == true);
@@ -40,6 +41,7 @@ public partial class ProveedoresView : UserControl
             if (carga != _cargaActual) return; // llegó una búsqueda más reciente
             Grid.ItemsSource = lista;
             TxtContador.Text = $"{lista.Count} proveedor(es)";
+            Estado.Vacio = lista.Count == 0;
             if (seleccionarId is int id)
             {
                 var p = lista.FirstOrDefault(x => x.Id == id);
@@ -49,6 +51,10 @@ public partial class ProveedoresView : UserControl
         catch (Exception ex)
         {
             App.MostrarError(ex, Window.GetWindow(this));
+        }
+        finally
+        {
+            if (carga == _cargaActual) Estado.Cargando = false;
         }
     }
 

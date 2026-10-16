@@ -4,16 +4,6 @@
         xmlns:ctrl="clr-namespace:FacturasCefer.Controls"
         Title="Factura" Width="760" Height="820" MinHeight="560"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
-    <Window.Resources>
-        <Style x:Key="Importe" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
-            <Setter Property="TextAlignment" Value="Right"/>
-        </Style>
-        <Style x:Key="Seccion" TargetType="TextBlock">
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Margin" Value="0,14,0,2"/>
-            <Setter Property="Foreground" Value="#1F4E79"/>
-        </Style>
-    </Window.Resources>
 
     <DockPanel Margin="20">
         <!-- Cabecera -->
@@ -24,15 +14,15 @@
                 <TextBlock Text="Cuenta contable:" VerticalAlignment="Center" Margin="0,0,8,0" FontWeight="SemiBold"/>
                 <ctrl:CuentaSelector x:Name="SelCuenta"/>
             </DockPanel>
-            <Border x:Name="PanelRevisar" Visibility="Collapsed" Background="#FFF3E0" Padding="10,6" Margin="0,8,0,0" CornerRadius="3">
+            <Border x:Name="PanelRevisar" Visibility="Collapsed" Style="{StaticResource AvisoAtencion}" Margin="0,8,0,0">
                 <DockPanel>
                     <Button x:Name="BtnRevisada" DockPanel.Dock="Right" Content="✔ Marcar como revisada" VerticalAlignment="Top"
                             Margin="10,0,0,0" Click="BtnRevisada_Click"/>
-                    <TextBlock x:Name="TxtRevisar" Foreground="#8A4500" TextWrapping="Wrap"/>
+                    <TextBlock x:Name="TxtRevisar" TextWrapping="Wrap"/>
                 </DockPanel>
             </Border>
-            <Border x:Name="PanelIban" Visibility="Collapsed" Background="#FDECEA" Padding="10,6" Margin="0,8,0,0" CornerRadius="3">
-                <TextBlock x:Name="TxtIbanAviso" Foreground="#8B1A1A" TextWrapping="Wrap"/>
+            <Border x:Name="PanelIban" Visibility="Collapsed" Style="{StaticResource AvisoError}" Margin="0,8,0,0">
+                <TextBlock x:Name="TxtIbanAviso" TextWrapping="Wrap"/>
             </Border>
         </StackPanel>
 
@@ -41,11 +31,11 @@
             <Button DockPanel.Dock="Left" Content="Abrir PDF" Click="BtnPdf_Click" Margin="0,0,8,0"/>
             <Button x:Name="BtnOriginal" DockPanel.Dock="Left" Content="Abrir PDF original" Click="BtnOriginal_Click"/>
             <Button DockPanel.Dock="Right" Content="Cerrar" IsCancel="True" MinWidth="90"/>
-            <Button x:Name="BtnGuardar" DockPanel.Dock="Right" Content="Guardar cambios" FontWeight="Bold" Margin="0,0,8,0"
+            <Button x:Name="BtnGuardar" DockPanel.Dock="Right" Content="Guardar cambios" Style="{StaticResource BotonPrimario}" Margin="0,0,8,0"
                     Click="BtnGuardar_Click"/>
         </DockPanel>
 
-        <TextBlock x:Name="TxtError" DockPanel.Dock="Bottom" Foreground="#C0392B" TextWrapping="Wrap" Margin="0,8,0,0"/>
+        <TextBlock x:Name="TxtError" DockPanel.Dock="Bottom" Style="{StaticResource TextoError}" Margin="0,8,0,0"/>
 
         <Grid>
             <Grid.RowDefinitions>

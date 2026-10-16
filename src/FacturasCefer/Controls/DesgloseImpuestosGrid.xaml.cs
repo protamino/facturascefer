@@ -63,7 +63,7 @@ public partial class DesgloseImpuestosGrid : UserControl
     {
         if (dudoso)
         {
-            Grid.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xFF, 0xF3, 0xC4));
+            Grid.Background = Tema.DudosoFondo;
             Grid.ToolTip = tooltip;
         }
         else

@@ -124,6 +124,7 @@ public partial class FacturasView : UserControl
     {
         var carga = ++_cargaActual;
         seleccionar ??= Seleccionadas.Select(f => f.Id).ToList();
+        Estado.Cargando = true;
         try
         {
             var lista = await App.Facturas.BuscarAsync(LeerFiltro());
@@ -131,6 +132,7 @@ public partial class FacturasView : UserControl
             Grid.ItemsSource = lista;
             foreach (var f in lista.Where(f => seleccionar.Contains(f.Id))) Grid.SelectedItems.Add(f);
 
+            Estado.Vacio = lista.Count == 0;
             var vencidas = lista.Count(f => f.Vencida);
             var revisar = lista.Count(f => f.Revisar);
             TxtResumen.Text = $"{lista.Count} factura(s)   ·   Total: {Formato.Importe(lista.Sum(f => f.Total))} €" +
@@ -140,6 +142,10 @@ public partial class FacturasView : UserControl
         catch (Exception ex)
         {
             App.MostrarError(ex, Window.GetWindow(this));
+        }
+        finally
+        {
+            if (carga == _cargaActual) Estado.Cargando = false;
         }
         ActualizarBotones();
     }
@@ -229,10 +235,12 @@ public partial class FacturasView : UserControl
             var r = await App.Facturas.CambiarEstadoAsync(sel.Select(f => f.Id), accion, dlg.Fecha, dlg.Texto,
                 App.Usuario.IdUsuario);
             if (r.Omitidas.Count > 0)
-                MessageBox.Show(owner,
-                    $"Aplicado a {r.Aplicadas} factura(s). No se ha aplicado a {r.Omitidas.Count}:\n\n" +
-                    string.Join("\n", r.Omitidas.Take(20)) + (r.Omitidas.Count > 20 ? "\n…" : ""),
-                    "Cambio de estado", MessageBoxButton.OK, MessageBoxImage.Information);
+                App.Notificar(
+                    $"Aplicado a {r.Aplicadas} factura(s). No se ha aplicado a {r.Omitidas.Count}:\n" +
+                    string.Join("\n", r.Omitidas.Take(10)) + (r.Omitidas.Count > 10 ? "\n…" : ""),
+                    TipoAviso.Atencion, owner);
+            else
+                App.Notificar($"Cambio aplicado a {r.Aplicadas} factura(s).", TipoAviso.Ok, owner);
         }
         catch (Exception ex)
         {
